@@ -1,7 +1,7 @@
-classy-hash
+Classy Hash
 ===========
 
-## Keep your Hashes {classy} -- Lightweight Hash validation gem
+### Keep Your Hashes Classy (a lightweight Hash validation gem)
 
 Classy Hash is a lightweight RubyGem for validating Ruby hashes.  You provide a
 simple schema Hash, and Classy Hash will make sure your data matches, providing
