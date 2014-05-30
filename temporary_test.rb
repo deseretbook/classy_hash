@@ -5,7 +5,7 @@
 require './lib/classy-hash'
 require 'benchmark'
 
-BENCHCOUNT=100000
+BENCHCOUNT=50000
 
 good_hash = {
   :k1 => 'Value One',
@@ -32,7 +32,8 @@ good_hash = {
       [],
       [-5, -10, -15],
     ]
-  }
+  },
+  :k10 => 7
 }
 
 bad_hashes = [
@@ -42,6 +43,11 @@ bad_hashes = [
   },
   {
     :k2 => 5,
+  },
+  {
+    :k1 => 'V1',
+    :k2 => 'V2',
+    :k3 => -600,
   },
   {
     :k1 => 'V1',
@@ -115,6 +121,33 @@ bad_hashes = [
         :d1 => 333
       }
     },
+    :k8 => [1],
+    :k9 => {
+      :opt1 => "opt1",
+      :opt2 => 35,
+      :opt3 => [
+        {:a => 5},
+        {:a => nil},
+        '7'
+      ],
+      :opt4 => []
+    },
+    :k10 => 1.7
+  },
+  {
+    :k1 => '1',
+    :k2 => '2',
+    :k3 => 3,
+    :k4 => 4,
+    :k5 => false,
+    :k6 => true,
+    :k7 => {
+      :n1 => 'N1',
+      :n2 => 'N2',
+      :n3 => {
+        :d1 => 333
+      }
+    },
     :k8 => [1, nil, 'str'],
     :k9 => {
       :opt1 => "opt1",
@@ -134,7 +167,7 @@ nested_schema = {
 schema = {
   :k1 => String,
   :k2 => String,
-  :k3 => Integer,
+  :k3 => -10..10000,
   :k4 => Numeric,
   :k5 => FalseClass,
   :k6 => TrueClass,
@@ -146,7 +179,8 @@ schema = {
     }
   },
   :k8 => [[Integer]],
-  :k9 => [NilClass, nested_schema]
+  :k9 => [NilClass, nested_schema],
+  :k10 => lambda {|value| (value.is_a?(Integer) && value.odd?) ? true : 'an odd integer'}
 }
 
 bad_schema = {

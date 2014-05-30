@@ -89,7 +89,28 @@ module ClassyHash
         self.check_multi(key, value, constraint, parent_path)
       end
 
-      # TODO: Allow procs, allow ranges, ability to validate all keys
+    when Proc
+      # User-specified validator
+      result = constraint.call(value)
+      if result != true
+        self.raise_error(parent_path, key, result.is_a?(String) ? result : "accepted by Proc")
+      end
+
+    when Range
+      # Range (with type checking for common classes)
+      if constraint.min.is_a?(Integer) && constraint.max.is_a?(Integer)
+        self.raise_error(parent_path, key, "an Integer") unless value.is_a?(Integer)
+      elsif constraint.min.is_a?(Numeric)
+        self.raise_error(parent_path, key, "a Numeric") unless value.is_a?(Numeric)
+      elsif constraint.min.is_a?(String)
+        self.raise_error(parent_path, key, "a String") unless value.is_a?(String)
+      end
+
+      unless constraint.cover?(value)
+        self.raise_error(parent_path, key, "in range #{constraint.inspect}")
+      end
+
+      # TODO: Ability to validate all keys
 
     else
       # Unknown schema constraint
