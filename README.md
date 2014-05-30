@@ -16,8 +16,8 @@ by verifying that incoming data meets expectations.
 
 Classy Hash was created as a lightweight alternative to the other great
 validation gems available.  By taking advantage of built-in Ruby language
-features, Classy Hash can validate common Hashes up to 4x faster than some of
-the other gems we tested.
+features, Classy Hash can validate common Hashes much faster than some of
+the other gems we tested, with a dead simple schema syntax.
 
 Classy Hash doesn't modify your Hashes or patch any core classes, so it's safe
 to use just about anywhere.
