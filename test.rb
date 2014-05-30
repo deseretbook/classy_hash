@@ -2,7 +2,7 @@
 # Quick and dirty test for Classy Hash, to be replaced by rspec later
 # Created May 28, 2014 by Mike Bourgeous, DeseretBook.com
 
-require './lib/classy-hash'
+require './lib/classy_hash'
 require 'benchmark'
 
 BENCHCOUNT=50000

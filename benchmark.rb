@@ -10,7 +10,7 @@ require 'json-schema'
 require 'schema_hash'
 require 'hash_validator'
 
-require './lib/classy-hash'
+require './lib/classy_hash'
 
 good_hash = JSON.parse(<<-JSON, symbolize_names: true)
 {
@@ -73,7 +73,7 @@ bad_hashes = [
 ]
 
 # ClassyHash schema
-# https://github.com/deseretbook/classy-hash
+# https://github.com/deseretbook/classy_hash
 classy_schema = {
   :k1 => String,
   :k2 => String,

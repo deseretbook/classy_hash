@@ -1,8 +1,8 @@
 Gem::Specification.new do |s|
-  s.name = 'classy-hash'
+  s.name = 'classy_hash'
   s.version = '0.0.1'
   s.license = 'MIT'
-  s.files = ['lib/classy-hash.rb']
+  s.files = ['lib/classy_hash.rb']
   s.summary = 'Classy Hash: Keep your Hashes classy; a Hash schema validator'
   s.description = <<-DESC
     Classy Hash is a schema validator for Ruby Hashes.  You provide a simple
@@ -11,5 +11,5 @@ Gem::Specification.new do |s|
     DESC
   s.authors = ['Deseret Book', 'Mike Bourgeous']
   s.email = 'mike@mikebourgeous.com'
-  s.homepage = 'https://github.com/deseretbook/classy-hash'
+  s.homepage = 'https://github.com/deseretbook/classy_hash'
 end
