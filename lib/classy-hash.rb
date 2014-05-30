@@ -66,19 +66,19 @@ module ClassyHash
           self.raise_error(parent_path, key, "true or false")
         end
       elsif !value.is_a?(constraint)
-        self.raise_error(parent_path, key, "a #{constraint}")
+        self.raise_error(parent_path, key, "a/an #{constraint}")
       end
 
     when Hash
       # Recursively check nested Hashes
-      self.raise_error(parent_path, key, "is not a Hash") unless value.is_a?(Hash)
+      self.raise_error(parent_path, key, "a Hash") unless value.is_a?(Hash)
       self.validate(value, constraint, self.join_path(parent_path, key))
 
     when Array
       # Multiple choice or array validation
       if constraint.length == 1 && constraint.first.is_a?(Array)
         # Array validation
-        self.raise_error(parent_path, key, "is not an Array") unless value.is_a?(Array)
+        self.raise_error(parent_path, key, "an Array") unless value.is_a?(Array)
 
         constraints = constraint.first
         value.each_with_index do |v, idx|
