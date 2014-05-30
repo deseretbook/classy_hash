@@ -10,14 +10,15 @@ doesn't.
 
 Classy Hash is fantastic for helping developers become familiar with an API, by
 letting them know exactly what they did wrong.  It also guards against mistakes
-by verifying that incoming data meets expectations.
+by verifying that incoming data meets expectations, and can serve as a
+convenient data structure documentation format.
 
 ### Why Classy Hash?
 
-Classy Hash was created as a lightweight alternative to the other great
+Classy Hash was created as a lightweight alternative to the other good
 validation gems available.  By taking advantage of built-in Ruby language
-features, Classy Hash can validate common Hashes much faster than some of
-the other gems we tested, with a dead simple schema syntax.
+features, Classy Hash can validate common Hashes much faster than some of the
+other gems we tested, with a dead simple schema syntax.
 
 Classy Hash doesn't modify your Hashes or patch any core classes, so it's safe
 to use just about anywhere.
@@ -48,13 +49,13 @@ For now, see `test.rb` and `benchmark.rb`.
 
 ### Who wrote it?
 
-Classy Hash was written by Mike Bourgeous for API validation in internal
-DeseretBook.com systems.
+Classy Hash was written by Mike Bourgeous for API validation and documentation
+in internal DeseretBook.com systems.
 
 ### Alternatives
 
-If you decide Classy Hash isn't for you, here are some of the other great
-options we considered before deciding to roll our own:
+If you decide Classy Hash isn't for you, here are some of the other options we
+considered before deciding to roll our own:
 
 - [JSON Schema](http://json-schema.org/) ([json-schema gem](http://rubygems.org/gems/json-schema))
 - [Hash Validator](https://github.com/JamesBrooks/hash_validator)
