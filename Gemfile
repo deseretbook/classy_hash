@@ -15,3 +15,6 @@ end
 # MessagePack for super fast serialization
 # http://msgpack.org
 gem 'msgpack', groups: [:benchmark, :test]
+
+# RSpec for tests
+gem 'rspec', group: :test
