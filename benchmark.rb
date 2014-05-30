@@ -232,6 +232,12 @@ VALIDATORS = {
       ClassyHash.validate(hash, classy_schema)
     }
   },
+  classy_hash_strict: {
+    divisor: 1,
+    validator: lambda{|hash|
+      ClassyHash.validate_strict(hash, classy_schema)
+    }
+  },
 
   hash_validator: {
     divisor: 1,

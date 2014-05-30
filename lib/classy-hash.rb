@@ -11,13 +11,26 @@ module ClassyHash
   # internally to generate error messages.
   def self.validate(hash, schema, parent_path=nil)
     schema.each do |key, constraint|
-      # TODO: option to allow missing, or a separate strict method (could use array subtraction)
-      self.raise_error(parent_path, key, "present") unless hash.include?(key)
-
-      self.check_one(key, hash[key], constraint, parent_path)
+      if hash.include?(key)
+        self.check_one(key, hash[key], constraint, parent_path)
+      elsif !(constraint.is_a?(Array) && constraint.include?(:optional))
+        self.raise_error(parent_path, key, "present")
+      end
     end
 
     nil
+  end
+
+  # As with #validate, but members not specified in the +schema+ are forbidden.
+  # Only the top-level schema is strictly validated.
+  def self.validate_strict(hash, schema, parent_path=nil)
+    unless (hash.keys - schema.keys).empty?
+      raise "Hash contains members not specified in schema"
+    end
+
+    # TODO: Strict validation for nested schemas as well
+
+    self.validate(hash, schema, parent_path)
   end
 
   # Raises an error unless the given +value+ matches one of the given multiple
@@ -28,6 +41,7 @@ module ClassyHash
 
     error = nil
     constraints.each do |c|
+      next if c == :optional
       begin
         self.check_one(key, value, c, parent_path)
         return
@@ -50,10 +64,12 @@ module ClassyHash
         "{...schema...}"
       elsif c.is_a?(Array)
         "[#{self.multiconstraint_string(c)}]"
+      elsif c == :optional
+        nil
       else
         c.inspect
       end
-    }.join(', ')
+    }.compact.join(', ')
   end
 
   # Checks a single value against a single constraint.
@@ -110,7 +126,9 @@ module ClassyHash
         self.raise_error(parent_path, key, "in range #{constraint.inspect}")
       end
 
-      # TODO: Ability to validate all keys
+    when :optional
+      # Optional key marker in multiple choice validators
+      nil
 
     else
       # Unknown schema constraint
@@ -127,6 +145,7 @@ module ClassyHash
   # Raises an error indicating that the given +key+ under the given
   # +parent_path+ fails because the value "is not #{+message+}".
   def self.raise_error(parent_path, key, message)
+    # TODO: Ability to validate all keys
     raise "#{self.join_path(parent_path, key)} is not #{message}"
   end
 end
