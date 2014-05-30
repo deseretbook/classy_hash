@@ -72,7 +72,7 @@ module ClassyHash
     when Hash
       # Recursively check nested Hashes
       self.raise_error(parent_path, key, "is not a Hash") unless value.is_a?(Hash)
-      self.validate(value, constraint, "#{parent_path}/#{key.inspect}")
+      self.validate(value, constraint, self.join_path(parent_path, key))
 
     when Array
       # Multiple choice or array validation
@@ -82,7 +82,7 @@ module ClassyHash
 
         constraints = constraint.first
         value.each_with_index do |v, idx|
-          self.check_multi(nil, v, constraints, "#{parent_path}/#{key.inspect}[#{idx}]")
+          self.check_multi(idx, v, constraints, self.join_path(parent_path, key))
         end
       else
         # Multiple choice
@@ -99,11 +99,13 @@ module ClassyHash
     nil
   end
 
+  def self.join_path(parent_path, key)
+    parent_path ? "#{parent_path}[#{key.inspect}]" : key.inspect
+  end
+
   # Raises an error indicating that the given +key+ under the given
   # +parent_path+ fails because the value "is not #{+message+}".
   def self.raise_error(parent_path, key, message)
-    # FIXME: path tracking is somewhat messy and gets complex array nestings wrong
-    key = "/#{key.inspect}" unless key.nil?
-    raise "#{parent_path}#{key} is not #{message}"
+    raise "#{self.join_path(parent_path, key)} is not #{message}"
   end
 end
