@@ -5,7 +5,7 @@
 require './lib/classy-hash'
 require 'benchmark'
 
-BENCHCOUNT=1000000
+BENCHCOUNT=100000
 
 good_hash = {
   :k1 => 'Value One',
@@ -20,6 +20,18 @@ good_hash = {
     :n3 => {
       :d1 => 5
     }
+  },
+  :k8 => [1, 2, 3, 4, 5],
+  :k9 => {
+    :opt1 => "opt1",
+    :opt2 => 35,
+    :opt3 => [ {:a => -5}, {:a => 6}, 'str3' ],
+    :opt4 => [
+      [1, 2, 3, 4, 5],
+      (6..10).to_a,
+      [],
+      [-5, -10, -15],
+    ]
   }
 }
 
@@ -62,8 +74,62 @@ bad_hashes = [
         :d1 => 'No'
       }
     }
+  },
+  {
+    :k1 => '1',
+    :k2 => '2',
+    :k3 => 3,
+    :k4 => 4,
+    :k5 => false,
+    :k6 => true,
+    :k7 => {
+      :n1 => 'N1',
+      :n2 => 'N2',
+      :n3 => {
+        :d1 => 333
+      }
+    },
+    :k8 => [1],
+    :k9 => {
+      :opt1 => "opt1",
+      :opt2 => 35,
+      :opt3 => [
+        {:a => 5},
+        {:a => nil},
+        {:a => 3.35},
+        7
+      ]
+    }
+  },
+  {
+    :k1 => '1',
+    :k2 => '2',
+    :k3 => 3,
+    :k4 => 4,
+    :k5 => false,
+    :k6 => true,
+    :k7 => {
+      :n1 => 'N1',
+      :n2 => 'N2',
+      :n3 => {
+        :d1 => 333
+      }
+    },
+    :k8 => [1, nil, 'str'],
+    :k9 => {
+      :opt1 => "opt1",
+      :opt2 => 35,
+      :opt3 => nil
+    }
   }
 ]
+
+nested_schema = {
+  :opt1 => [NilClass, String],
+  :opt2 => [Numeric, Symbol],
+  :opt3 => [[ { :a => [NilClass, Integer] }, String ]],
+  :opt4 => [[ [[ Integer ]] ]], # Array of arrays of integers
+}
 
 schema = {
   :k1 => String,
@@ -78,7 +144,9 @@ schema = {
     :n3 => {
       :d1 => Numeric
     }
-  }
+  },
+  :k8 => [[Integer]],
+  :k9 => [NilClass, nested_schema]
 }
 
 bad_schema = {
