@@ -191,25 +191,33 @@ hash_validator_schema = {
 }
 
 
+# Number of benchmark iterations (divided by the divisors listed below for each
+# validator and serializer)
+BENCHCOUNT=200000
+
 # A list of serialization/deserialization lambdas for testing performance and
 # data mangling.
 SERIALIZERS = {
-  msgpack: {
+  no_op: {
     divisor: 1,
+    serializer: lambda{|hash| hash},
+  },
+  msgpack: {
+    divisor: 2,
     serializer: lambda{|hash| MessagePack.unpack(hash.to_msgpack, symbolize_keys: true)},
   },
   json: {
-    divisor: 2,
+    divisor: 4,
     serializer: lambda{|hash| JSON.parse(hash.to_json, symbolize_names: true)},
   },
   yaml: {
-    divisor: 8,
+    divisor: 16,
     serializer: lambda{|hash| YAML.load(hash.to_yaml)},
   }
 }
 
 # A list of schema validators to test.  Lambdas should validate against their
-# corresponding SKU schema and raise an error if validation fails.
+# corresponding schema and raise an error if validation fails.
 VALIDATORS = {
   no_op: {
     divisor: 1,
@@ -261,8 +269,6 @@ VALIDATORS = {
     }
   }
 }
-
-BENCHCOUNT=100000
 
 # Runs the given block BENCHCOUNT times for each serializer/schema pair.
 # Yields serializer name, serializer, validator name, validator
