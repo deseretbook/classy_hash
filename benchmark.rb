@@ -226,11 +226,10 @@ VALIDATORS = {
     }
   },
 
-  schema_hash: {
+  classy_hash: {
     divisor: 1,
     validator: lambda{|hash|
-      hash.schema = schema_hash_schema
-      raise 'hash invalid' unless hash.valid?
+      ClassyHash.validate(hash, classy_schema)
     }
   },
 
@@ -242,10 +241,11 @@ VALIDATORS = {
     }
   },
 
-  classy_hash: {
+  schema_hash: {
     divisor: 1,
     validator: lambda{|hash|
-      ClassyHash.validate(hash, classy_schema)
+      hash.schema = schema_hash_schema
+      raise 'hash invalid' unless hash.valid?
     }
   },
 
