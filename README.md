@@ -3,9 +3,10 @@ Classy Hash
 
 ### Keep Your Hashes Classy (a lightweight Hash validation gem)
 
-Classy Hash is a lightweight RubyGem for validating Ruby hashes.  You provide a
-simple schema Hash, and Classy Hash will make sure your data matches, providing
-helpful error messages if it doesn't.
+Classy Hash is a lightweight RubyGem for validating Ruby hashes against a
+simple schema Hash that indicates what data types are expected.  Classy Hash
+will make sure your data matches, providing helpful error messages if it
+doesn't.
 
 Classy Hash is fantastic for helping developers become familiar with an API, by
 letting them know exactly what they did wrong.  It also guards against mistakes
@@ -23,14 +24,21 @@ about anywhere.
 
 ### Examples
 
+For now, see `test.rb` and `benchmark.rb`.
+
 ```ruby
-# TODO
+# TODO - inline examples
 ```
+
+### Who wrote it?
+
+Classy Hash was written by Mike Bourgeous for API validation in internal
+DeseretBook.com systems.
 
 ### Alternatives
 
-If you decide Classy Hash isn't for you, here are some of the other options we
-considered before deciding to roll our own:
+If you decide Classy Hash isn't for you, here are some of the other great
+options we considered before deciding to roll our own:
 
 - [JSON Schema](http://json-schema.org/) ([json-schema gem](http://rubygems.org/gems/json-schema))
 - [Hash Validator](https://github.com/JamesBrooks/hash_validator)
@@ -39,4 +47,4 @@ considered before deciding to roll our own:
 ### License
 
 Classy Hash is released under the MIT license (see the `LICENSE` file for the
-license text).
+license text and copyright notice).
