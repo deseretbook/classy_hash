@@ -10,7 +10,7 @@ RSpec.describe ClassyHash do
       name: 'simple',
 
       # Schema for this data category
-      :schema => {
+      schema: {
         k1: String,
         k2: Numeric,
         k3: Fixnum,
@@ -26,12 +26,361 @@ RSpec.describe ClassyHash do
 
       # Bad hashes for this schema, with expected error message (string or regex)
       bad: [
+        [ /^:k1.*present/, { } ],
         [ /^:k1/, { k1: :optional, k2: 2, k3: 3, k4: true } ],
         [ /^:k2/, { k1: '', k2: nil, k3: 3, k4: true } ],
         [ /^:k3/, { k1: '', k2: 0, k3: 3.3, k4: true } ],
         [ /^:k3/, { k1: '', k2: 0, k3: 1<<200, k4: true } ],
         [ /^:k4/, { k1: '', k2: 0, k3: 3, k4: 'invalid' } ]
       ],
+    },
+    {
+      name: 'complex',
+
+      schema: {
+        k1: String,
+        k2: String,
+        k3: -10..10000,
+        k4: Numeric,
+        k5: FalseClass,
+        k6: TrueClass,
+
+        # :k7 must be a hash with this schema
+        k7: {
+          n1: String,
+          n2: String,
+          n3: {
+            d1: Numeric
+          }
+        },
+
+        # :k8 must be an array of integers
+        k8: [[Integer]],
+
+        # :k9 can be either nil or a hash with the specified schema
+        k9: [
+          NilClass,
+          {
+            opt1: [NilClass, String],
+            opt2: [:optional, Numeric, Symbol],
+            opt3: [[ { a: [NilClass, Integer] }, String ]], # Array of hashes or strings
+            opt4: [[ [[ Integer ]] ]], # Array of arrays of integers
+          }
+        ],
+
+        # :k10 must be an odd integer
+        k10: lambda {|value| (value.is_a?(Integer) && value.odd?) ? true : 'an odd integer'},
+
+        # :k11 can be missing, a string, or an array of integers, nils, and booleans
+        k11: [:optional, String, [[Integer, NilClass, FalseClass]]]
+      },
+
+      good: [
+        {
+          k1: 'Value One',
+          k2: 'Value Two',
+          k3: -3,
+          k4: 4.4,
+          k5: true,
+          k6: false,
+          k7: {
+            n1: 'Hi there',
+            n2: 'This is a nested hash',
+            n3: {
+              d1: 5
+            }
+          },
+          k8: [1, 2, 3, 4, 5],
+          k9: {
+            opt1: "opt1",
+            opt2: 35,
+            opt3: [
+              {a: -5},
+              {a: 6},
+              'str3'
+            ],
+            opt4: [
+              [1, 2, 3, 4, 5],
+              (6..10).to_a,
+              [],
+              [-5, -10, -15],
+            ]
+          },
+          k10: 7
+          # :k11 is optional
+        },
+        {
+          k1: 'V1',
+          k2: 'V2',
+          k3: -3,
+          k4: 4.4,
+          k5: true,
+          k6: false,
+          k7: {
+            n1: 'Hi there',
+            n2: 'This is a nested hash',
+            n3: {
+              d1: 5
+            }
+          },
+          k8: [1, 2, 3, 4, 5],
+          k9: {
+            opt1: nil,
+            opt2: :sym1,
+            opt3: [
+              {a: -5},
+              {a: nil},
+              'str3'
+            ],
+            opt4: []
+          },
+          k10: -3,
+          k11: 'K11 can be a string'
+        },
+        {
+          k1: 'V1',
+          k2: 'V2',
+          k3: -3,
+          k4: 4.4,
+          k5: true,
+          k6: false,
+          k7: {
+            n1: 'Hi there',
+            n2: 'This is a nested hash',
+            n3: {
+              d1: 5
+            }
+          },
+          k8: [1, 2, 3, 4, 5],
+          k9: {
+            opt1: "opt1",
+            opt3: [
+              {a: -5},
+              {a: nil},
+              'str3'
+            ],
+            opt4: [
+              [1, 2, 3, 4, 5],
+              (6..10).to_a,
+              [],
+              [-5, -10, -15],
+            ]
+          },
+          k10: -3,
+          k11: 'K11 is a string here'
+        },
+        {
+          k1: 'V1',
+          k2: 'V2',
+          k3: -3,
+          k4: 4.4,
+          k5: true,
+          k6: false,
+          k7: {
+            n1: 'Hi there',
+            n2: 'This is a nested hash',
+            n3: {
+              d1: 0.35
+            }
+          },
+          k8: [1, 2, 3, 4, 5],
+          k9: {
+            opt1: "opt1",
+            opt3: [
+              {a: -5},
+              {a: nil},
+              'str3'
+            ],
+            opt4: [
+              [1, 2, 3, 4, 5],
+              (6..10).to_a,
+              [],
+              [-5, -10, -15],
+            ]
+          },
+          k10: -3,
+          k11: [
+            3,
+            4,
+            5,
+            nil,
+            true,
+            false,
+            1<<150
+          ]
+        },
+      ],
+
+      bad: [
+        [ /^:k1/, { k1: :v1 } ],
+        [ /^:k1/, { k2: 5 } ],
+        [ /^:k3.*range/, { k1: 'V1', k2: 'V2', k3: -600, } ],
+        [ /^:k5/, { k1: 'V1', k2: 'V2', k3: 5, k4: 1.0, k5: 'true' } ],
+        [ /^:k7.*hash/i, { k1: '1', k2: '2', k3: 3, k4: 4, k5: false, k6: true, k7: 'x' } ],
+        [
+          /^:k7\[:n3\]\[:d1\]/,
+          {
+            k1: '1',
+            k2: '2',
+            k3: 3,
+            k4: 4,
+            k5: false,
+            k6: true,
+            k7: {
+              n1: 'N1',
+              n2: 'N2',
+              n3: {
+                d1: 'No'
+              }
+            }
+          }
+        ],
+        [
+          /^:k9\[:opt3\]\[2\]\[:a\].*one of/,
+          {
+            k1: '1',
+            k2: '2',
+            k3: 3,
+            k4: 4,
+            k5: false,
+            k6: true,
+            k7: {
+              n1: 'N1',
+              n2: 'N2',
+              n3: {
+                d1: 333
+              }
+            },
+            k8: [1],
+            k9: {
+              opt1: "opt1",
+              opt2: 35,
+              opt3: [
+                {a: 5},
+                {a: nil},
+                {a: 3.35},
+                7
+              ]
+            }
+          }
+        ],
+        [
+          /^:k10.*odd/,
+          {
+            k1: '1',
+            k2: '2',
+            k3: 3,
+            k4: 4,
+            k5: false,
+            k6: true,
+            k7: {
+              n1: 'N1',
+              n2: 'N2',
+              n3: {
+                d1: 333
+              }
+            },
+            k8: [1],
+            k9: {
+              opt1: "opt1",
+              opt2: 35,
+              opt3: [
+                {a: 5},
+                {a: nil},
+                '7'
+              ],
+              opt4: []
+            },
+            k10: 1.7
+          }
+        ],
+        [
+          /^:k9\[:opt4\]\[1\]\[3\]/,
+          {
+            k1: 'V1',
+            k2: 'V2',
+            k3: -3,
+            k4: 4.4,
+            k5: true,
+            k6: false,
+            k7: {
+              n1: 'Hi there',
+              n2: 'This is a nested hash',
+              n3: {
+                d1: 0.35
+              }
+            },
+            k8: [1, 2, 3, 4, 5],
+            k9: {
+              opt1: "opt1",
+              opt3: [
+                {a: -5},
+                {a: nil},
+                'str3'
+              ],
+              opt4: [
+                [1],
+                [3, 5, 9, 10.0],
+                [],
+                [-10, -15],
+              ]
+            },
+            k10: -3,
+            k11: [
+              3,
+              4,
+              5,
+              nil,
+              true,
+              false,
+              1
+            ]
+          }
+        ],
+        [
+          /^:k11\[6\]/,
+          {
+            k1: 'V1',
+            k2: 'V2',
+            k3: -3,
+            k4: 4.4,
+            k5: true,
+            k6: false,
+            k7: {
+              n1: 'Hi there',
+              n2: 'This is a nested hash',
+              n3: {
+                d1: 0.35
+              }
+            },
+            k8: [1, 2, 3, 4, 5],
+            k9: {
+              opt1: "opt1",
+              opt3: [
+                {a: -5},
+                {a: nil},
+                'str3'
+              ],
+              opt4: [
+                [1, 2, 3, 4, 5],
+                (6..10).to_a,
+                [],
+                [-5, -10, -15],
+              ]
+            },
+            k10: -3,
+            k11: [
+              3,
+              4,
+              5,
+              nil,
+              true,
+              false,
+              1.5
+            ]
+          }
+        ],
+      ]
     }
   ]
 
