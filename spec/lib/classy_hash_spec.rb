@@ -564,6 +564,10 @@ RSpec.describe ClassyHash do
       expect{ ClassyHash.validate({}, false) }.to raise_error(/hash/i)
     end
 
+    it 'rejects invalid schema elements' do
+      expect{ ClassyHash.validate({a: 1}, {a: :invalid}) }.to raise_error
+    end
+
     context 'schema is empty' do
       it 'accepts all hashes' do
         expect{ ClassyHash.validate({}, {}) }.not_to raise_error
