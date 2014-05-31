@@ -23,6 +23,8 @@ other gems we tested, with a dead simple schema syntax.
 Classy Hash doesn't modify your Hashes or patch any core classes, so it's safe
 to use just about anywhere.
 
+Classy Hash is thoroughly tested (see the **Testing** section below).
+
 Finally, Classy Hash is blazingly fast:
 
 ```
@@ -45,6 +47,16 @@ For now, see `test.rb` and `benchmark.rb`.
 
 ```ruby
 # TODO - inline examples
+```
+
+### Testing
+
+Classy Hash includes extremely thorough [RSpec](http://rspec.info) tests:
+
+```bash
+# Execute within a clone of the classy_hash Git repository:
+bundle install
+rspec
 ```
 
 ### Who wrote it?
