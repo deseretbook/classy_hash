@@ -43,7 +43,7 @@ Finally, Classy Hash is blazingly fast:
 
 ### Examples
 
-For now, see `test.rb` and `benchmark.rb`.
+For now, see `benchmark.rb` and `lib/spec/classy_hash_spec.rb`.
 
 ```ruby
 # TODO - inline examples
