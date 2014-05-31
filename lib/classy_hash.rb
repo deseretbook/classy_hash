@@ -46,11 +46,11 @@ module ClassyHash
         self.check_one(key, value, c, parent_path)
         return
       rescue => e
-        if c.is_a?(Hash) && value.is_a?(Hash)
-          raise e # Throw schema errors immediately
+        # Throw schema and array errors immediately
+        if (c.is_a?(Hash) && value.is_a?(Hash)) ||
+          (c.is_a?(Array) && value.is_a?(Array) && c.length == 1 && c.first.is_a?(Array))
+          raise e
         end
-
-        error = e
       end
     end
 
