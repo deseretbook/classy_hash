@@ -1,7 +1,11 @@
+# Classy Hash: Keep Your Hashes Classy (RSpec test suite)
+# Created May 2014 by Mike Bourgeous, DeseretBook.com
+# Copyright (C)2014 Deseret Book
+# See LICENSE and README.md for details.
+
 require 'msgpack'
 require 'classy_hash'
 
-# ClassyHash tests
 RSpec.describe ClassyHash do
   # A list of test data and expected values for automated integration test creation
   classy_data = [
