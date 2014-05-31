@@ -178,6 +178,11 @@ RSpec.describe ClassyHash do
       expect{ ClassyHash.validate({a: 1}, {a: 'a'..'z'}) }.to raise_error(/String/)
     end
 
+    it 'rejects non-hashes' do
+      expect{ ClassyHash.validate(false, {}) }.to raise_error(/hash/i)
+      expect{ ClassyHash.validate({}, false) }.to raise_error(/hash/i)
+    end
+
     context 'schema is empty' do
       it 'accepts all hashes' do
         expect{ ClassyHash.validate({}, {}) }.not_to raise_error
@@ -189,6 +194,11 @@ RSpec.describe ClassyHash do
   end
 
   describe '.validate_strict' do
+    it 'rejects non-hashes' do
+      expect{ ClassyHash.validate_strict(false, {}) }.to raise_error(/hash/i)
+      expect{ ClassyHash.validate_strict({}, false) }.to raise_error(/hash/i)
+    end
+
     context 'schema is empty' do
       let(:schema) { empty_schema }
 

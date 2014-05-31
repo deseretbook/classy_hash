@@ -10,6 +10,9 @@ module ClassyHash
   # Validates a +hash+ against a +schema+.  The +parent_path+ parameter is used
   # internally to generate error messages.
   def self.validate(hash, schema, parent_path=nil)
+    raise 'Must validate a Hash' unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
+    raise 'Schema must be a Hash' unless schema.is_a?(Hash) # TODO: Allow individual element validations?
+
     schema.each do |key, constraint|
       if hash.include?(key)
         self.check_one(key, hash[key], constraint, parent_path)
@@ -24,6 +27,9 @@ module ClassyHash
   # As with #validate, but members not specified in the +schema+ are forbidden.
   # Only the top-level schema is strictly validated.
   def self.validate_strict(hash, schema, parent_path=nil)
+    raise 'Must validate a Hash' unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
+    raise 'Schema must be a Hash' unless schema.is_a?(Hash) # TODO: Allow individual element validations?
+
     unless (hash.keys - schema.keys).empty?
       raise "Hash contains members not specified in schema"
     end
