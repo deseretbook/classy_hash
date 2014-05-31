@@ -3,6 +3,38 @@ require 'classy_hash'
 
 # ClassyHash tests
 RSpec.describe ClassyHash do
+  # A list of test data and expected values for automated integration test creation
+  classy_data = [
+    {
+      # Name of the data category
+      name: 'simple',
+
+      # Schema for this data category
+      :schema => {
+        k1: String,
+        k2: Numeric,
+        k3: Fixnum,
+        k4: TrueClass,
+      },
+
+      # Good hashes for this schema
+      good: [
+        { k1: 'V1', k2: 2, k3: 3, k4: true },
+        { k1: 'Val1', k2: 2.2, k3: -3, k4: false },
+        { k1: 'V1', k2: Rational(-2, 7), k3: 0, k4: true },
+      ],
+
+      # Bad hashes for this schema, with expected error message (string or regex)
+      bad: [
+        [ /^:k1/, { k1: :optional, k2: 2, k3: 3, k4: true } ],
+        [ /^:k2/, { k1: '', k2: nil, k3: 3, k4: true } ],
+        [ /^:k3/, { k1: '', k2: 0, k3: 3.3, k4: true } ],
+        [ /^:k3/, { k1: '', k2: 0, k3: 1<<200, k4: true } ],
+        [ /^:k4/, { k1: '', k2: 0, k3: 3, k4: 'invalid' } ]
+      ],
+    }
+  ]
+
   # Granular tests
   describe '.validate' do
     it 'accepts basic valid values' do
@@ -207,6 +239,49 @@ RSpec.describe ClassyHash do
         expect{ ClassyHash.validate_strict({a: 1}, {}) }.to raise_error
         expect{ ClassyHash.validate_strict({[1] => [2]}, {}) }.to raise_error
         expect{ ClassyHash.validate_strict({ {} => {} }, {}) }.to raise_error
+      end
+    end
+  end
+
+  # Integrated tests (see test data at the top of the file)
+  classy_data.each do |d|
+    describe '.validate' do
+      context "schema is #{d[:name]}" do
+        d[:good].each_with_index do |h, idx|
+          it "accepts good hash #{idx}" do
+            expect{ ClassyHash.validate(h, d[:schema]) }.not_to raise_error
+          end
+
+          it "accepts good hash #{idx} with extra members" do
+            expect{ ClassyHash.validate(h.merge({k999: 'a', k000: :b}), d[:schema]) }.not_to raise_error
+          end
+        end
+
+        d[:bad].each_with_index do |info, idx|
+          it "rejects bad hash #{idx}" do
+            expect{ ClassyHash.validate(info[1], d[:schema]) }.to raise_error(info[0])
+          end
+        end
+      end
+    end
+
+    describe '.validate_strict' do
+      context "schema is #{d[:name]}" do
+        d[:good].each_with_index do |h, idx|
+          it "accepts good hash #{idx}" do
+            expect{ ClassyHash.validate_strict(h, d[:schema]) }.not_to raise_error
+          end
+
+          it "rejects good hash #{idx} with extra members" do
+            expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(/contains members/)
+          end
+        end
+
+        d[:bad].each_with_index do |info, idx|
+          it "rejects bad hash #{idx}" do
+            expect{ ClassyHash.validate_strict(info[1], d[:schema]) }.to raise_error(info[0])
+          end
+        end
       end
     end
   end
