@@ -10,7 +10,8 @@ require 'json-schema'
 require 'schema_hash'
 require 'hash_validator'
 
-require './lib/classy_hash'
+$: << File.join(File.dirname(__FILE__), 'lib')
+require 'classy_hash'
 
 good_hash = JSON.parse(<<-JSON, symbolize_names: true)
 {

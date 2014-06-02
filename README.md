@@ -258,7 +258,8 @@ ClassyHash.validate({ key1: ['bad'] }, schema) # Throws ":key1[0] is not one of 
 ClassyHash.validate({ key1: [ [], ['a'], ['b', false] ] }, schema) # Throws ":key1[2][1] is not one of String"
 ```
 
-If you want to check the length of an array, you can use a `Proc`:
+If you want to check the length of an array, you can use a `Proc` (also see the
+Generators section below):
 
 ```ruby
 # An array of two integers
@@ -277,9 +278,77 @@ schema = {
   }
 }
 
-ClassyHash.validate({ key1: [1, 2]}, schema) # Okay
-ClassyHash.validate({ key1: [1, false]}, schema) # Throws ":key1 is not valid: :k[1] is not one of Integer"
-ClassyHash.validate({ key1: [1]}, schema) # Throws ":key1 is not an array of length 2"
+ClassyHash.validate({ key1: [1, 2] }, schema) # Okay
+ClassyHash.validate({ key1: [1, false] }, schema) # Throws ":key1 is not valid: :k[1] is not one of Integer"
+ClassyHash.validate({ key1: [1] }, schema) # Throws ":key1 is not an array of length 2"
+```
+
+#### Generators
+
+Version 0.1.1 of Classy Hash introduces some helper methods in
+`ClassyHash::Generate` that will generate a constraint for common tasks that
+are difficult to represent in the base Classy Hash syntax.
+
+##### Enumeration
+
+The simplest generator checks for a set of exact values.
+
+```ruby
+# Enumerator -- value must be one of the elements provided
+schema = {
+  key1: ClassyHash::Generate.enum(1, 2, 3, 4)
+}
+
+ClassyHash.validate({ key1: 1 }, schema) # Okay
+ClassyHash.validate({ key1: -1 }, schema) # Throws ":key1 is not an element of [1, 2, 3, 4]"
+```
+
+##### Arbitrary length
+
+The arbitrary length generator checks the length of any type that responds to
+`:length`.
+
+```ruby
+# Simple length generator -- length of value must be equal to a value, or
+# within a range
+schema = {
+  key1: ClassyHash::Generate.length(5..6)
+}
+
+ClassyHash.validate({ key1: '123456' }, schema) # Okay
+ClassyHash.validate({ key1: {a: 1, b: 2, c: 3, d: 4, e: 5} }, schema) # Okay
+ClassyHash.validate({ key1: [1, 2] }, schema) # Throws ":key1 is not of length 5..6"
+ClassyHash.validate({ key1: 5 }, schema) # Throws ":key1 is not a type that responds to :length"
+```
+
+##### String or Array length
+
+Since checking the length of a `String` or an `Array` is very common, there are
+generators that will verify a value is the correct type *and* the correct
+length.
+
+```ruby
+# String length generator
+schema = {
+  key1: ClassyHash::Generate.string_length(0..15)
+}
+
+ClassyHash.validate({ key1: 'x' * 15 }, schema) # Okay
+ClassyHash.validate({ key1: 'x' * 16 }, schema) # Throws ":key1 is not a String of length 0..15"
+ClassyHash.validate({ key1: false }, schema) # Throws ":key1 is not a String of length 0..15"
+```
+
+The `Array` length constraint generator also checks the values of the array.
+
+```ruby
+# Array length generator
+schema = {
+  key1: ClassyHash::Generate.array_length(4, Integer, String)
+}
+
+ClassyHash.validate({ key1: [1, 'two', 3, 4] }, schema) # Okay
+ClassyHash.validate({ key1: [1, 2, false, 4] }, schema) # Throws ":key1 is not valid: :array[2] is not one of Integer, String"
+ClassyHash.validate({ key1: false }, schema) # Throws ":key1 is not an Array of length 4"
 ```
 
 #### A practical example (user and address)

@@ -159,3 +159,5 @@ module ClassyHash
     raise "#{self.join_path(parent_path, key)} is not #{message}"
   end
 end
+
+require 'classy_hash/generate'
