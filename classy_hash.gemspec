@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'classy_hash'
-  s.version = '0.0.1'
+  s.version = '0.1.0'
   s.license = 'MIT'
   s.files = ['lib/classy_hash.rb']
   s.summary = 'Classy Hash: Keep your Hashes classy; a Hash schema validator'
