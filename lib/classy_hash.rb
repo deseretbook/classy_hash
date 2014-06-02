@@ -42,6 +42,10 @@ module ClassyHash
   # Raises an error unless the given +value+ matches one of the given multiple
   # choice +constraints+.
   def self.check_multi(key, value, constraints, parent_path=nil)
+    if constraints.length == 0
+        self.raise_error(parent_path, key, "a valid multiple choice constraint (array must not be empty)")
+    end
+
     # Optimize the common case of a direct class match
     return if constraints.include?(value.class)
 

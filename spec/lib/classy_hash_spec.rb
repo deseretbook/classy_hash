@@ -572,6 +572,11 @@ RSpec.describe ClassyHash do
       expect{ ClassyHash.validate({a: 1}, {a: :invalid}) }.to raise_error
     end
 
+    it 'rejects empty multiple choice constraints' do
+      expect{ ClassyHash.validate({a: nil}, {a: []}) }.to raise_error(/choice.*empty/)
+      expect{ ClassyHash.validate({a: [1]}, {a: [[]]}) }.to raise_error(/choice.*empty/)
+    end
+
     context 'schema is empty' do
       it 'accepts all hashes' do
         expect{ ClassyHash.validate({}, {}) }.not_to raise_error
