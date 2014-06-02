@@ -3,7 +3,6 @@
 # Copyright (C)2014 Deseret Book
 # See LICENSE and README.md for details.
 
-require 'msgpack'
 require 'classy_hash'
 
 RSpec.describe ClassyHash do
