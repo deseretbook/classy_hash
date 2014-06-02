@@ -292,7 +292,7 @@ should have some basic fields, an array of addresses, and no extra fields.
 Here's how you might use Classy Hash to validate your user objects and generate
 helpful error messages:
 
-```
+```ruby
 # Note: this is not guaranteed to be a useful address checking schema.
 address_schema = {
   street1: String,
