@@ -77,6 +77,12 @@ RSpec.describe ClassyHash::Generate do
       expect{ ClassyHash.validate({ a: 3 }, int_schema) }.to raise_error(/respond.*length/)
       expect{ ClassyHash.validate({ a: 3 }, range_schema) }.to raise_error(/respond.*length/)
     end
+
+    it 'rejects lengths and range endpoints that are not integers' do
+      expect{ ClassyHash::Generate.length(1.5) }.to raise_error(/Integer/)
+      expect{ ClassyHash::Generate.length(5..9.5) }.to raise_error(/Integer/)
+      expect{ ClassyHash::Generate.length('a'..'z') }.to raise_error(/Integer/)
+    end
   end
 
   describe '.array_length' do

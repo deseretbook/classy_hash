@@ -67,7 +67,7 @@ RSpec.describe ClassyHash do
           NilClass,
           {
             opt1: [NilClass, String],
-            opt2: [:optional, Numeric, Symbol],
+            opt2: [:optional, Numeric, Symbol, [[Integer]]],
             opt3: [[ { a: [NilClass, Integer] }, String ]], # Array of hashes or strings
             opt4: [[ [[ Integer ]] ]], # Array of arrays of integers
           }
@@ -191,6 +191,7 @@ RSpec.describe ClassyHash do
           k8: [1, 2, 3, 4, 5],
           k9: {
             opt1: "opt1",
+            opt2: [1, 2, 3],
             opt3: [
               {a: -5},
               {a: nil},
@@ -237,6 +238,35 @@ RSpec.describe ClassyHash do
               n3: {
                 d1: 'No'
               }
+            }
+          }
+        ],
+        [
+          /^:k9\[:opt2\].*one of/,
+          {
+            k1: '1',
+            k2: '2',
+            k3: 3,
+            k4: 4,
+            k5: false,
+            k6: true,
+            k7: {
+              n1: 'N1',
+              n2: 'N2',
+              n3: {
+                d1: 333
+              }
+            },
+            k8: [1],
+            k9: {
+              opt1: "opt1",
+              opt2: nil,
+              opt3: [
+                {a: 5},
+                {a: nil},
+                {a: 3.35},
+                7
+              ]
             }
           }
         ],
@@ -576,6 +606,13 @@ RSpec.describe ClassyHash do
     it 'rejects empty multiple choice constraints' do
       expect{ ClassyHash.validate({a: nil}, {a: []}) }.to raise_error(/choice.*empty/)
       expect{ ClassyHash.validate({a: [1]}, {a: [[]]}) }.to raise_error(/choice.*empty/)
+    end
+
+    it 'accepts any value for :optional (undocumented)' do
+      expect{ ClassyHash.validate({a: nil}, {a: :optional}) }.not_to raise_error
+      expect{ ClassyHash.validate({a: 1}, {a: :optional}) }.not_to raise_error
+      expect{ ClassyHash.validate({a: ['a', 'b']}, {a: :optional}) }.not_to raise_error
+      expect{ ClassyHash.validate({a: {}}, {a: :optional}) }.not_to raise_error
     end
 
     context 'schema is empty' do
