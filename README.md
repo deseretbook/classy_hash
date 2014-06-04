@@ -30,14 +30,14 @@ Finally, Classy Hash is blazingly fast:
 ```
       Serializer      |      Validator       |  Ops/sec
 ----------------------+----------------------+-----------
- msgpack              | no_op                | 127560
- msgpack              | classy_hash          | 71201
- msgpack              | classy_hash_strict   | 61102
- msgpack              | hash_validator       | 27950
- msgpack              | schema_hash          | 22227
- msgpack              | json_schema          | 1302
- msgpack              | json_schema_strict   | 1301
- msgpack              | json_schema_full     | 1280
+ msgpack              | no_op                | 123525
+ msgpack              | classy_hash          | 67798
+ msgpack              | classy_hash_strict   | 59952
+ msgpack              | hash_validator       | 27578
+ msgpack              | schema_hash          | 22217
+ msgpack              | json_schema          | 1255
+ msgpack              | json_schema_full     | 1251
+ msgpack              | json_schema_strict   | 1086
 ```
 
 
