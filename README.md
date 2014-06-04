@@ -1,6 +1,8 @@
 Classy Hash
 ===========
 
+[![Gem Version](https://badge.fury.io/rb/classy_hash.svg)](http://badge.fury.io/rb/classy_hash)
+
 ### Keep Your Hashes Classy (a lightweight Hash validation gem)
 
 Classy Hash is a lightweight RubyGem for validating Ruby hashes against a
