@@ -2,6 +2,7 @@ Classy Hash
 ===========
 
 [![Gem Version](https://badge.fury.io/rb/classy_hash.svg)](http://badge.fury.io/rb/classy_hash)
+[![Codeship Status for deseretbook/classy_hash](https://www.codeship.io/projects/5d9729d0-da17-0131-dac9-1a1edd089127/status)](https://www.codeship.io/projects/24256)
 
 ### Keep Your Hashes Classy (a lightweight Hash validation gem)
 
