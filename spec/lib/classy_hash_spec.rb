@@ -632,8 +632,6 @@ RSpec.describe ClassyHash do
     end
 
     context 'schema is empty' do
-      let(:schema) { empty_schema }
-
       it 'rejects all non-empty hashes' do
         expect{ ClassyHash.validate_strict({}, {}) }.not_to raise_error
         expect{ ClassyHash.validate_strict({a: 1}, {}) }.to raise_error
