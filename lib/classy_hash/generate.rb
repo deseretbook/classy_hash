@@ -13,7 +13,7 @@ module ClassyHash
     #       a: ClassyHash::Generate.enum(1, 2, 3, 4)
     #     }
     #     ClassyHash.validate({ a: 1 }, schema)
-    def self.enum *args
+    def self.enum(*args)
       lambda {|v|
         args.include?(v) || "an element of #{args.inspect}"
       }
@@ -29,7 +29,7 @@ module ClassyHash
     #     }
     #     ClassyHash.validate({a: '12345'}, schema)
     #     ClassyHash.validate({a: [1, 2, 3, 4, 5]}, schema)
-    def self.length length
+    def self.length(length)
       raise "length must be an Integer or a Range" unless length.is_a?(Integer) || length.is_a?(Range)
 
       if length.is_a?(Range) && !(length.min.is_a?(Integer) && length.max.is_a?(Integer))
@@ -57,7 +57,7 @@ module ClassyHash
     #       a: ClassyHash::Generate.array_length(4..5, Integer, String)
     #     }
     #     ClassyHash.validate({ a: [ 1, 2, 3, 'four', 5 ] }, schema)
-    def self.array_length length, *constraints
+    def self.array_length(length, *constraints)
       raise 'one or more constraints must be provided' if constraints.empty?
 
       length_lambda = self.length(length)
@@ -89,7 +89,7 @@ module ClassyHash
     #       a: ClassyHash::Generate.string_length(3)
     #     }
     #     ClassyHash.validate({a: '123'}, schema)
-    def self.string_length length
+    def self.string_length(length)
       length_lambda = self.length(length)
       msg = "a String of length #{length}"
 

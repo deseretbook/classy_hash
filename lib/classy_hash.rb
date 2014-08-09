@@ -68,7 +68,7 @@ module ClassyHash
   end
 
   # Generates a semi-compact String describing the given +constraints+.
-  def self.multiconstraint_string constraints
+  def self.multiconstraint_string(constraints)
     constraints.map{|c|
       if c.is_a?(Hash)
         "{...schema...}"
