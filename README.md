@@ -289,8 +289,9 @@ ClassyHash.validate({ key1: [1] }, schema) # Throws ":key1 is not an array of le
 #### Generators
 
 Version 0.1.1 of Classy Hash introduces some helper methods in
-`ClassyHash::Generate` that will generate a constraint for common tasks that
-are difficult to represent in the base Classy Hash syntax.
+`ClassyHash::Generate` (or the `CH::G` alias introduced in 0.1.2) that will
+generate a constraint for common tasks that are difficult to represent in the
+base Classy Hash syntax.
 
 ##### Enumeration
 
@@ -299,7 +300,7 @@ The simplest generator checks for a set of exact values.
 ```ruby
 # Enumerator -- value must be one of the elements provided
 schema = {
-  key1: ClassyHash::Generate.enum(1, 2, 3, 4)
+  key1: CH::G.enum(1, 2, 3, 4)
 }
 
 ClassyHash.validate({ key1: 1 }, schema) # Okay
@@ -315,7 +316,7 @@ The arbitrary length generator checks the length of any type that responds to
 # Simple length generator -- length of value must be equal to a value, or
 # within a range
 schema = {
-  key1: ClassyHash::Generate.length(5..6)
+  key1: CH::G.length(5..6)
 }
 
 ClassyHash.validate({ key1: '123456' }, schema) # Okay
@@ -333,7 +334,7 @@ length.
 ```ruby
 # String length generator
 schema = {
-  key1: ClassyHash::Generate.string_length(0..15)
+  key1: CH::G.string_length(0..15)
 }
 
 ClassyHash.validate({ key1: 'x' * 15 }, schema) # Okay
@@ -346,7 +347,7 @@ The `Array` length constraint generator also checks the values of the array.
 ```ruby
 # Array length generator
 schema = {
-  key1: ClassyHash::Generate.array_length(4, Integer, String)
+  key1: CH::G.array_length(4, Integer, String)
 }
 
 ClassyHash.validate({ key1: [1, 'two', 3, 4] }, schema) # Okay

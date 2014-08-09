@@ -102,4 +102,7 @@ module ClassyHash
       }
     end
   end
+
+  # Shortcut to ClassyHash::Generate
+  G = Generate
 end

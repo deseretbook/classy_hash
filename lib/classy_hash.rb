@@ -161,3 +161,7 @@ module ClassyHash
 end
 
 require 'classy_hash/generate'
+
+if !Kernel.const_defined?(:CH)
+  CH = ClassyHash
+end

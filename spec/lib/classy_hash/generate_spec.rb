@@ -7,14 +7,14 @@ require 'spec_helper'
 
 require 'classy_hash'
 
-RSpec.describe ClassyHash::Generate do
+RSpec.describe CH::G do
   describe '.enum' do
     let(:int_schema) do
-      { a: ClassyHash::Generate.enum(1, 2, 3, 4, 5) }
+      { a: CH::G.enum(1, 2, 3, 4, 5) }
     end
 
     let(:multi_schema) do
-      { a: ClassyHash::Generate.enum(1, nil, false, 'test') }
+      { a: CH::G.enum(1, nil, false, 'test') }
     end
 
     it 'accepts values in the list' do
@@ -34,11 +34,11 @@ RSpec.describe ClassyHash::Generate do
 
   describe '.length' do
     let(:int_schema) do
-      { a: ClassyHash::Generate.length(3) }
+      { a: CH::G.length(3) }
     end
 
     let(:range_schema) do
-      { a: ClassyHash::Generate.length(2..4) }
+      { a: CH::G.length(2..4) }
     end
 
     it 'accepts objects with a valid length' do
@@ -79,19 +79,19 @@ RSpec.describe ClassyHash::Generate do
     end
 
     it 'rejects lengths and range endpoints that are not integers' do
-      expect{ ClassyHash::Generate.length(1.5) }.to raise_error(/Integer/)
-      expect{ ClassyHash::Generate.length(5..9.5) }.to raise_error(/Integer/)
-      expect{ ClassyHash::Generate.length('a'..'z') }.to raise_error(/Integer/)
+      expect{ CH::G.length(1.5) }.to raise_error(/Integer/)
+      expect{ CH::G.length(5..9.5) }.to raise_error(/Integer/)
+      expect{ CH::G.length('a'..'z') }.to raise_error(/Integer/)
     end
   end
 
   describe '.array_length' do
     let(:int_schema) do
-      { a: ClassyHash::Generate.array_length(4, Integer) }
+      { a: CH::G.array_length(4, Integer) }
     end
 
     let(:range_schema) do
-      { a: ClassyHash::Generate.array_length(0..2, Integer, String, NilClass) }
+      { a: CH::G.array_length(0..2, Integer, String, NilClass) }
     end
 
     it 'accepts arrays with a valid length and values' do
@@ -138,11 +138,11 @@ RSpec.describe ClassyHash::Generate do
 
   describe '.string_length' do
     let(:int_schema) do
-      { a: ClassyHash::Generate.string_length(3) }
+      { a: CH::G.string_length(3) }
     end
 
     let(:range_schema) do
-      { a: ClassyHash::Generate.string_length(0..2) }
+      { a: CH::G.string_length(0..2) }
     end
 
     it 'accepts strings with a valid length' do
