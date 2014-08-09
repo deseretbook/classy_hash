@@ -1,3 +1,5 @@
+# Classy Hash extended validation generators
+# Copyright (C)2014 Deseret Book
 
 module ClassyHash
   # This module contains helpers that generate constraints for common
