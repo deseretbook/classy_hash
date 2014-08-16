@@ -328,9 +328,18 @@ module ClassyHash
   # Raises an error indicating that the given +key+ under the given
   # +parent_path+ fails because the value "is not #{+message+}".
   def self.raise_error(parent_path, key, constraint, value)
-    # TODO: Ability to validate all keys
     message = constraint.is_a?(String) ? constraint : constraint_string(constraint, value)
-    raise "#{self.join_path(parent_path, key) || 'Top level'} is not #{message}"
+    raise SchemaViolationError.new(self.join_path(parent_path, key) || 'Top level', message)
+  end
+
+  class SchemaViolationError < StandardError
+    def initialize(full_path, error_msg)
+      @error_msg, @full_path = error_msg, full_path
+    end
+
+    def to_s
+      "#{@full_path} is not #{@error_msg}"
+    end
   end
 end
 
