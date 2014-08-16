@@ -93,7 +93,8 @@ ClassyHash.validate(hash, schema) # Throws ":key2 is not a/an Integer"
 
 The `validate` method will raise an exception if validation fails.  Validation
 proceeds until the first invalid value is found, then an error is thrown for
-that value.  Later values are not checked.
+that value.  Later values are not checked unless you run a full validation with
+`validate_full`.
 
 You can pass `strict: true` as a keyword argument to `validate` to raise an
 error if the input hash contains any members not specified in the schema.
@@ -102,6 +103,41 @@ the generated error message (a potential security risk in some settings).  See
 the inline documentation in the source code for more details.  As of version
 0.2.0, all nested schemas will also be checked for unexpected members.
 
+
+#### Full validation
+
+If you'd like to capture *all* errors, you can use `validate_full`. If you don't
+pass a block, `validate_full` will simply raise an error that includes all the
+violations in the message:
+
+```ruby
+schema = {
+  key1: String,
+  key2: Integer,
+  key3: TrueClass
+}
+
+hash = {
+  key1: 'A less classy Hash',
+  key2: 1.25,
+  key3: 'Also wrong'
+}
+
+ClassyHash.validate(hash, schema) # Throws ":key2 is not a/an Integer, :key3 is not a/an TrueClass"
+```
+
+However, if you pass a block, your application code can actually handle the
+validation errors:
+
+```ruby
+errors = []
+
+ClassyHash.validate(hash, schema) do |error_hash|
+  errors << "#{error_hash[:full_path]}: #{error_hash[:message]}"
+end
+
+# Now, errors is [":key2: a/an Integer", ":key3: a/an TrueClass"]
+```
 
 #### Multiple choice
 
@@ -118,6 +154,7 @@ ClassyHash.validate({ key1: 'Hi' }, schema) # Okay
 ClassyHash.validate({ key1: true }, schema) # Okay
 ClassyHash.validate({ key1: 1337 }, schema) # Throws ":key1 is not one of NilClass, String, FalseClass"
 ```
+
 
 #### Optional keys
 
