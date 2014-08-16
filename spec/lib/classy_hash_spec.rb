@@ -771,6 +771,29 @@ describe ClassyHash do
     end
   end
 
+  describe '.validate_full' do
+    it 'collects all errors' do
+      schema = {a: String, b: { c: String }}
+      expect{ ClassyHash.validate_full({a: 1, b: {} }, schema) }.to raise_error(%r{:a is not a\/an String, :b\[:c\] is not present})
+      expect{ ClassyHash.validate_full({a: 'hey', b: { c: 'hello' }}, schema) }.not_to raise_error
+    end
+
+    it 'accepts a block for application level validation error handling' do
+      entries = []
+
+      # The actual SchemaValidationError is suppressed, since passing a block
+      # implies that you want to do something else with validation errors.
+      ClassyHash.validate_full({a: 1, b: {} }, {a: String, b: { c: String }}) do |error_entry|
+        entries << error_entry
+      end
+
+      expect(entries).to eq [
+        { full_path: ':a', message: 'a/an String' },
+        { full_path: ':b[:c]', message: 'present' }
+      ]
+    end
+  end
+
   # Integrated tests (see test data at the top of the file)
   classy_data.each do |d|
     describe '.validate' do

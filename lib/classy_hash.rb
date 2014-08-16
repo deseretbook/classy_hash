@@ -9,6 +9,9 @@ require 'securerandom'
 # This module contains the ClassyHash methods for making sure Ruby Hash objects
 # match a given schema.  ClassyHash runs fast by taking advantage of Ruby
 # language features and avoiding object creation during validation.
+
+require 'continuation'
+
 module ClassyHash
   # Internal symbol representing the absence of a value for error message
   # generation.  Generated at runtime to prevent potential malicious use of the
@@ -207,6 +210,19 @@ module ClassyHash
     validate(hash, schema, parent_path: parent_path, verbose: verbose, strict: true)
   end
 
+  # Similar to #validate, but collects *all* schema violation errors
+  def self.validate_full(hash, schema, &block)
+    error_entries = []
+    begin
+      validate(hash, schema)
+    rescue SchemaViolationError => error
+      error_entries.concat error.entries
+      error.continue
+    end
+    error_entries.each(&block) and return if block_given?
+    raise SchemaViolationError.new(error_entries) unless error_entries.empty?
+  end
+
   # Raises an error unless the given +value+ matches one of the given multiple
   # choice +constraints+.  Other parameters are used for internal state.
   def self.check_multi(value, constraints, strict: nil, full: nil, verbose: nil, raise_errors: nil,
@@ -329,17 +345,29 @@ module ClassyHash
   # +parent_path+ fails because the value "is not #{+message+}".
   def self.raise_error(parent_path, key, constraint, value)
     message = constraint.is_a?(String) ? constraint : constraint_string(constraint, value)
-    raise SchemaViolationError.new(self.join_path(parent_path, key) || 'Top level', message)
+    callcc do |cont|
+      entry = { full_path: self.join_path(parent_path, key) || 'Top level', message: message }
+      raise SchemaViolationError.new([entry], cont)
+    end
   end
 
   class SchemaViolationError < StandardError
-    def initialize(full_path, error_msg)
-      @error_msg, @full_path = error_msg, full_path
+    attr :entries, :cont
+
+    def initialize(entries = [], cont = nil)
+      @entries, @cont = entries, cont
     end
 
-    def to_s
-      "#{@full_path} is not #{@error_msg}"
+    def continue
+      cont.call
     end
+
+    def full_message
+      entries.each_with_object [] do |entry, list|
+        list << "#{entry.fetch(:full_path)} is not #{entry.fetch(:message)}"
+      end.join(', ')
+    end
+    alias_method :to_s, :full_message
   end
 end
 
