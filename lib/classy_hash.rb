@@ -156,7 +156,17 @@ module ClassyHash
   # +parent_path+ fails because the value "is not #{+message+}".
   def self.raise_error(parent_path, key, message)
     # TODO: Ability to validate all keys
-    raise "#{self.join_path(parent_path, key)} is not #{message}"
+    raise SchemaViolationError.new(self.join_path(parent_path, key), message)
+  end
+
+  class SchemaViolationError < StandardError
+    def initialize(full_path, error_msg)
+      @error_msg, @full_path = error_msg, full_path
+    end
+
+    def to_s
+      "#{@full_path} is not #{@error_msg}"
+    end
   end
 end
 
