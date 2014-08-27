@@ -25,8 +25,12 @@ module ClassyHash
     end
 
     def full_message
-      entries.each_with_object [] do |entry, list|
-        list << "#{entry.fetch(:full_path)} is not #{entry.fetch(:message)}"
+      @entries.each_with_object [] do |entry, list|
+        if entry[:full_path]
+          list << "#{entry[:full_path]} is not #{entry[:message]}"
+        else
+          list << entry[:message]
+        end
       end.join(', ')
     end
     alias_method :to_s, :full_message
@@ -229,11 +233,12 @@ module ClassyHash
     validate(hash, schema, parent_path: parent_path, verbose: verbose, strict: true)
   end
 
-  # Similar to #validate, but collects *all* schema violation errors
-  def self.validate_full(hash, schema, &block)
+  # Similar to #validate (or #validate_strict if +strict+ is true), but
+  # collects *all* schema violation errors.
+  def self.validate_full(hash, schema, strict = false, &block)
     error_entries = []
     begin
-      validate(hash, schema)
+      strict ? validate_strict(hash, schema) : validate(hash, schema)
     rescue SchemaViolationError => error
       error_entries.concat error.entries
       error.continue
@@ -361,7 +366,12 @@ module ClassyHash
   end
 
   # Raises an error indicating that the given +key+ under the given
-  # +parent_path+ fails because the value "is not #{+message+}".
+  # +parent_path+ fails because the value "is not #{+message+}"
+  #
+  # If parent_path and key are both nil, then the error message will just be
+  # the given +message+.
+  #
+  # (TODO clarify -MB)
   def self.raise_error(parent_path, key, constraint, value)
     message = constraint.is_a?(String) ? constraint : constraint_string(constraint, value)
     callcc do |cont|
