@@ -239,6 +239,18 @@ VALIDATORS = {
       ClassyHash.validate_strict(hash, classy_schema)
     }
   },
+  classy_hash_full: {
+    divisor: 1,
+    validator: lambda{|hash|
+      ClassyHash.validate_full(hash, classy_schema)
+    }
+  },
+  classy_hash_full_strict: {
+    divisor: 1,
+    validator: lambda{|hash|
+      ClassyHash.validate_full(hash, classy_schema, true)
+    }
+  },
 
   hash_validator: {
     divisor: 1,
