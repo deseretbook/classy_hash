@@ -14,16 +14,25 @@ module ClassyHash
   # Raised when a validation fails.  Allows ClassyHash#validate_full to
   # continue validation and gather all errors.
   class SchemaViolationError < StandardError
-    attr :entries, :cont
+    # The list of errors passed to the constructor.  Contains an Array of Hashes:
+    #   [
+    #     { full_path: ClassyHash.join_path(parent_path, key), message: message },
+    #     ...
+    #   ]
+    attr_reader :entries
 
-    def initialize(entries = [], cont = nil)
-      @entries, @cont = entries, cont
+    # Initializes a schema violation error with the given list of schema
+    # +errors+ and a continuation (+cont+) for resuming execution.
+    def initialize(errors = [], cont = nil)
+      @entries, @cont = errors, cont
     end
 
+    # Resumes execution using the continuation passed to the constructor.
     def continue
-      cont.call
+      @cont.call
     end
 
+    # Joins all errors passed to the constructor into a comma-separated String.
     def full_message
       @entries.each_with_object [] do |entry, list|
         if entry[:full_path]
@@ -237,14 +246,21 @@ module ClassyHash
   # collects *all* schema violation errors.
   def self.validate_full(hash, schema, strict = false, &block)
     error_entries = []
+
     begin
       strict ? validate_strict(hash, schema) : validate(hash, schema)
     rescue SchemaViolationError => error
       error_entries.concat error.entries
       error.continue
     end
-    error_entries.each(&block) and return if block_given?
-    raise SchemaViolationError.new(error_entries) unless error_entries.empty?
+
+    if block_given?
+      error_entries.each(&block)
+    elsif !error_entries.empty?
+      raise SchemaViolationError.new(error_entries)
+    end
+
+    nil
   end
 
   # Raises an error unless the given +value+ matches one of the given multiple
