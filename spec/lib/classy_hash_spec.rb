@@ -841,6 +841,34 @@ describe ClassyHash do
         end
       end
     end
+
+    describe '.validate_full' do
+      context "schema is #{d[:name]}" do
+        d[:good].each_with_index do |h, idx|
+          it "accepts good hash #{idx}" do
+            expect{ ClassyHash.validate_full(h, d[:schema]) }.not_to raise_error
+          end
+
+          context 'strict parameter is false' do
+            it "accepts good hash #{idx} with extra members" do
+              expect{ ClassyHash.validate_full(h.merge({k999: 'a', k000: :b}), d[:schema], false) }.not_to raise_error
+            end
+          end
+
+          context 'strict parameter is true' do
+            it "accepts good hash #{idx} with extra members" do
+              expect{ ClassyHash.validate_full(h.merge({k999: 'a', k000: :b}), d[:schema], true) }.to raise_error
+            end
+          end
+        end
+
+        d[:bad].each_with_index do |info, idx|
+          it "rejects bad hash #{idx}" do
+            expect{ ClassyHash.validate(info[1], d[:schema]) }.to raise_error(info[0])
+          end
+        end
+      end
+    end
   end
 
   describe 'deep strict validation' do
