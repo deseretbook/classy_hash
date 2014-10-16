@@ -673,6 +673,12 @@ RSpec.describe ClassyHash do
           it "rejects good hash #{idx} with extra members" do
             expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(/contains members/)
           end
+
+          it "includes unexpected hash #{idx} keys in error message if verbose is set" do
+            expect {
+              ClassyHash.validate_strict(h.merge(k999: 'a', k000: :b), d[:schema], true)
+            }.to raise_error(/k999.*schema/)
+          end
         end
 
         d[:bad].each_with_index do |info, idx|

@@ -25,13 +25,19 @@ module ClassyHash
   end
 
   # As with #validate, but members not specified in the +schema+ are forbidden.
-  # Only the top-level schema is strictly validated.
-  def self.validate_strict(hash, schema, parent_path=nil)
+  # Only the top-level schema is strictly validated.  If +verbose+ is true, the
+  # names of unexpected keys will be included in the error message.
+  def self.validate_strict(hash, schema, verbose=false, parent_path=nil)
     raise 'Must validate a Hash' unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
     raise 'Schema must be a Hash' unless schema.is_a?(Hash) # TODO: Allow individual element validations?
 
-    unless (hash.keys - schema.keys).empty?
-      raise "Hash contains members not specified in schema"
+    extra_keys = hash.keys - schema.keys
+    unless extra_keys.empty?
+      if verbose
+        raise "Hash contains members (#{extra_keys.map(&:inspect).join(', ')}) not specified in schema"
+      else
+        raise 'Hash contains members not specified in schema'
+      end
     end
 
     # TODO: Strict validation for nested schemas as well
