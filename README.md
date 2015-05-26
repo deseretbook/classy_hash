@@ -135,6 +135,34 @@ schema = {
 ClassyHash.validate({}, schema) # Doesn't throw
 ```
 
+#### Regular expressions
+
+`Regexp` constraints, added in 0.1.4, will require values to be `String`s that
+match a regular expression:
+
+```ruby
+schema = {
+  key1: /Re.*quired/i
+}
+
+ClassyHash.validate({ key1: /required/ }, schema) # Throws ":key1 is not a String matching /re.*quired/i"
+ClassyHash.validate({ key1: 'invalid' }, schema) # Throws ":key1 is not a String matching /re.*quired/i"
+ClassyHash.validate({ key1: 'The regional manager inquired about ClassyHash' }, schema) # Okay
+```
+
+As with Ruby's `=~` operator, `Regexp`s can match anywhere in the `String`.  To
+require the entire `String` to match, use [the standard `\A` and `\z`
+anchors](http://ruby-doc.org/core-2.2.2/Regexp.html#class-Regexp-label-Anchors):
+
+```ruby
+schema = {
+  key1: /\AStart.*end\z/
+}
+
+ClassyHash.validate({ key1: 'One must Start to end' }, schema) # Throws ":key1 is not a String matching /\\AStart.*end\\z/"
+ClassyHash.validate({ key1: 'Start now, continue to the end' }, schema) # Okay
+```
+
 #### Ranges and lambdas
 
 If you want to check more than just the type of a value, you can specify a
@@ -368,7 +396,7 @@ helpful error messages:
 ```ruby
 # Note: this is not guaranteed to be a useful address checking schema.
 address_schema = {
-  street1: String,
+  street1: /[0-9]+/,
   street2: [NilClass, String],
   city: String,
   state: [NilClass, String],
@@ -389,7 +417,7 @@ data = <<JSON
   "email": "@",
   "addresses": [
     {
-      "street1": "",
+      "street1": "123 Fake Street",
       "street2": null,
       "city": "",
       "state": "",
@@ -397,7 +425,7 @@ data = <<JSON
       "postcode": ""
     },
     {
-      "street1": "",
+      "street1": "Building 53",
       "street2": "",
       "city": 5
     }
