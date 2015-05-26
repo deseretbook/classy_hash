@@ -121,6 +121,12 @@ module ClassyHash
         self.check_multi(key, value, constraint, parent_path)
       end
 
+    when Regexp
+      # Constrain value to be a String matching a Regexp
+      unless value.is_a?(String) && value =~ constraint
+        self.raise_error(parent_path, key, "a String matching #{constraint.inspect}")
+      end
+
     when Proc
       # User-specified validator
       result = constraint.call(value)
