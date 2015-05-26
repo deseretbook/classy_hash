@@ -20,23 +20,28 @@ RSpec.describe ClassyHash do
         k2: Numeric,
         k3: Fixnum,
         k4: TrueClass,
+        k5: /\Ah.*d\z/i,
+        k6: /H.*d/,
       },
 
       # Good hashes for this schema
       good: [
-        { k1: 'V1', k2: 2, k3: 3, k4: true },
-        { k1: 'Val1', k2: 2.2, k3: -3, k4: false },
-        { k1: 'V1', k2: Rational(-2, 7), k3: 0, k4: true },
+        { k1: 'V1', k2: 2, k3: 3, k4: true, k5: 'Hello, World', k6: 'I say, Hello, World!' },
+        { k1: 'Val1', k2: 2.2, k3: -3, k4: false, k5: 'HOLD', k6: 'Hold' },
+        { k1: 'V1', k2: Rational(-2, 7), k3: 0, k4: true, k5: 'hi world', k6: 'Hola, World' },
       ],
 
       # Bad hashes for this schema, with expected error message (string or regex)
       bad: [
         [ /^:k1.*present/, { } ],
-        [ /^:k1/, { k1: :optional, k2: 2, k3: 3, k4: true } ],
-        [ /^:k2/, { k1: '', k2: nil, k3: 3, k4: true } ],
-        [ /^:k3/, { k1: '', k2: 0, k3: 3.3, k4: true } ],
-        [ /^:k3/, { k1: '', k2: 0, k3: 1<<200, k4: true } ],
-        [ /^:k4/, { k1: '', k2: 0, k3: 3, k4: 'invalid' } ]
+        [ /^:k1/, { k1: :optional, k2: 2, k3: 3, k4: true, k5: 'hd', k6: 'Hd' } ],
+        [ /^:k2/, { k1: '', k2: nil, k3: 3, k4: true, k5: 'hd', k6: 'Hd' } ],
+        [ /^:k3/, { k1: '', k2: 0, k3: 3.3, k4: true, k5: 'hd', k6: 'Hd' } ],
+        [ /^:k3/, { k1: '', k2: 0, k3: 1<<200, k4: true, k5: 'hd', k6: 'Hd' } ],
+        [ /^:k4/, { k1: '', k2: 0, k3: 3, k4: 'invalid', k5: 'hd', k6: 'Hd' } ],
+        [ /^:k5.*String.*match/, { k1: '', k2: 0, k3: 3, k4: true, k5: nil, k6: 'Hd' } ],
+        [ /^:k5.*String.*match/, { k1: '', k2: 0, k3: 3, k4: true, k5: 'Not hd', k6: 'Hd' } ],
+        [ /^:k6.*String.*match/, { k1: '', k2: 0, k3: 3, k4: true, k5: 'HD', k6: 'hD' } ],
       ],
     },
     {
@@ -59,8 +64,8 @@ RSpec.describe ClassyHash do
           }
         },
 
-        # :k8 must be an array of integers
-        k8: [[Integer]],
+        # :k8 must be an array of integers or a String matching /ints/
+        k8: [ [[Integer]], /ints/ ],
 
         # :k9 can be either nil or a hash with the specified schema
         k9: [
@@ -189,6 +194,47 @@ RSpec.describe ClassyHash do
             }
           },
           k8: [1, 2, 3, 4, 5],
+          k9: {
+            opt1: "opt1",
+            opt2: [1, 2, 3],
+            opt3: [
+              {a: -5},
+              {a: nil},
+              'str3'
+            ],
+            opt4: [
+              [1, 2, 3, 4, 5],
+              (6..10).to_a,
+              [],
+              [-5, -10, -15],
+            ]
+          },
+          k10: -3,
+          k11: [
+            3,
+            4,
+            5,
+            nil,
+            true,
+            false,
+            1<<150
+          ]
+        },
+        {
+          k1: 'V1',
+          k2: 'V2',
+          k3: -3,
+          k4: 4.4,
+          k5: true,
+          k6: false,
+          k7: {
+            n1: 'Hi there',
+            n2: 'This is a nested hash',
+            n3: {
+              d1: 0.35
+            }
+          },
+          k8: 'some ints would normally be here',
           k9: {
             opt1: "opt1",
             opt2: [1, 2, 3],
@@ -415,6 +461,49 @@ RSpec.describe ClassyHash do
             ]
           }
         ],
+        [
+          /^:k8.*\/ints\//,
+          {
+            k1: 'V1',
+            k2: 'V2',
+            k3: -3,
+            k4: 4.4,
+            k5: true,
+            k6: false,
+            k7: {
+              n1: 'Hi there',
+              n2: 'This is a nested hash',
+              n3: {
+                d1: 0.35
+              }
+            },
+            k8: 'There are no integers here',
+            k9: {
+              opt1: "opt1",
+              opt3: [
+                {a: -5},
+                {a: nil},
+                'str3'
+              ],
+              opt4: [
+                [1, 2, 3, 4, 5],
+                (6..10).to_a,
+                [],
+                [-5, -10, -15],
+              ]
+            },
+            k10: -3,
+            k11: [
+              3,
+              4,
+              5,
+              nil,
+              true,
+              false,
+              1<<150
+            ]
+          }
+        ],
       ]
     }
   ]
@@ -606,6 +695,23 @@ RSpec.describe ClassyHash do
     it 'rejects empty multiple choice constraints' do
       expect{ ClassyHash.validate({a: nil}, {a: []}) }.to raise_error(/choice.*empty/)
       expect{ ClassyHash.validate({a: [1]}, {a: [[]]}) }.to raise_error(/choice.*empty/)
+    end
+
+    it 'accepts or rejects Strings using a partial-string regex' do
+      schema = { a: /(in)?[1-9]{1,3}/ }
+      expect{ ClassyHash.validate({a: 3}, schema) }.to raise_error(/String.*match/)
+      expect{ ClassyHash.validate({a: 3.to_s}, schema) }.not_to raise_error
+      expect{ ClassyHash.validate({a: nil}, schema) }.to raise_error(/String.*match/)
+      expect{ ClassyHash.validate({a: 'in0'}, schema) }.to raise_error(/String.*match/)
+      expect{ ClassyHash.validate({a: 'in1'}, schema) }.not_to raise_error
+      expect{ ClassyHash.validate({a: 'the middle can be in923 ok'}, schema) }.not_to raise_error
+    end
+
+    it 'accepts or rejects Strings using a whole-string regex' do
+      schema = { a: /\Athe.*string\z/i }
+      expect{ ClassyHash.validate({a: /the string/}, schema) }.to raise_error(/String.*match/)
+      expect{ ClassyHash.validate({a: 'not the string'}, schema) }.to raise_error(/String.*match/)
+      expect{ ClassyHash.validate({a: 'The WHOLE String'}, schema) }.not_to raise_error
     end
 
     it 'accepts any value for :optional (undocumented)' do
