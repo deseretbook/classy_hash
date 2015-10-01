@@ -70,16 +70,18 @@ module ClassyHash
       end
     end
 
-    self.raise_error(parent_path, key, "one of #{multiconstraint_string(constraints)}")
+    self.raise_error(parent_path, key, "one of #{multiconstraint_string(constraints, value)}")
   end
 
   # Generates a semi-compact String describing the given +constraints+.
-  def self.multiconstraint_string(constraints)
+  def self.multiconstraint_string(constraints, value)
     constraints.map{|c|
       if c.is_a?(Hash)
         "{...schema...}"
       elsif c.is_a?(Array)
-        "[#{self.multiconstraint_string(c)}]"
+        "[#{self.multiconstraint_string(c, value)}]"
+      elsif c.is_a?(Proc)
+        c.call(value) || c.inspect
       elsif c == :optional
         nil
       else

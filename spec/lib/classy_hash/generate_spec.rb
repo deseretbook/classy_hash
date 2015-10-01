@@ -145,11 +145,20 @@ RSpec.describe CH::G do
       { a: CH::G.string_length(0..2) }
     end
 
+    let(:multi_schema) do
+      { a: [:optional, CH::G.string_length(0..2)] }
+    end
+
     it 'accepts strings with a valid length' do
       expect{ ClassyHash.validate({ a: '123' }, int_schema) }.not_to raise_error
+
       expect{ ClassyHash.validate({ a: '' }, range_schema) }.not_to raise_error
       expect{ ClassyHash.validate({ a: '1' }, range_schema) }.not_to raise_error
       expect{ ClassyHash.validate({ a: '12' }, range_schema) }.not_to raise_error
+
+      expect{ ClassyHash.validate({ a: '' }, multi_schema) }.not_to raise_error
+      expect{ ClassyHash.validate({ a: '1' }, multi_schema) }.not_to raise_error
+      expect{ ClassyHash.validate({ a: '12' }, multi_schema) }.not_to raise_error
     end
 
     it 'rejects strings with an invalid length' do
@@ -158,6 +167,9 @@ RSpec.describe CH::G do
 
       expect{ ClassyHash.validate({ a: '123' }, range_schema) }.to raise_error(/String.*length/)
       expect{ ClassyHash.validate({ a: '123456' }, range_schema) }.to raise_error(/String.*length/)
+
+      expect{ ClassyHash.validate({ a: '123' }, multi_schema) }.to raise_error(/String.*length/)
+      expect{ ClassyHash.validate({ a: '123456' }, multi_schema) }.to raise_error(/String.*length/)
     end
 
     it 'rejects non-strings' do
@@ -170,6 +182,11 @@ RSpec.describe CH::G do
       expect{ ClassyHash.validate({ a: false }, range_schema) }.to raise_error(/String/)
       expect{ ClassyHash.validate({ a: :a }, range_schema) }.to raise_error(/String/)
       expect{ ClassyHash.validate({ a: ['1', '2'] }, range_schema) }.to raise_error(/String/)
+
+      expect{ ClassyHash.validate({ a: 0 }, multi_schema) }.to raise_error(/String/)
+      expect{ ClassyHash.validate({ a: false }, multi_schema) }.to raise_error(/String/)
+      expect{ ClassyHash.validate({ a: :a }, multi_schema) }.to raise_error(/String/)
+      expect{ ClassyHash.validate({ a: ['1', '2'] }, multi_schema) }.to raise_error(/String/)
     end
   end
 end
