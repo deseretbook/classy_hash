@@ -813,4 +813,34 @@ describe ClassyHash do
       end
     end
   end
+
+  describe 'deep strict validation' do
+    context 'when nested hash contains unexpected members' do
+      let(:schema) do
+        { nested: { id: Integer } }
+      end
+
+      let(:hash) do
+        { nested: { id: 1, wutang: false } }
+      end
+
+      it 'rejects hash' do
+        expect{ ClassyHash.deep_validate_strict(hash, schema) }.to raise_error(/contains members/)
+      end
+    end
+
+    context 'when elements of child array contains unexpected members' do
+      let(:schema) do
+        { collection: [[{ id: Integer }]] }
+      end
+
+      let(:hash) do
+        { collection: [{ id: 1, wutang: false }] }
+      end
+
+      it 'rejects hash' do
+        expect{ ClassyHash.deep_validate_strict(hash, schema) }.to raise_error(/contains members/)
+      end
+    end
+  end
 end
