@@ -23,7 +23,7 @@ module ClassyHash
     raise 'Schema must be a Hash' unless schema.is_a?(Hash) # TODO: Allow individual element validations?
 
     if strict && (hash.keys - schema.keys).any?
-      members = verbose ? "(#{(hash.keys - schema.keys).map(&:inspect).join(', ')})" : ''
+      members = "(#{(hash.keys - schema.keys).inspect.delete('[]')})" if verbose
       raise "Hash contains members #{members} not specified in schema".squeeze(' ')
     end
 
