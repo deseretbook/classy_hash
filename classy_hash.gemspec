@@ -13,5 +13,5 @@ Gem::Specification.new do |s|
   s.email = 'mike@mikebourgeous.com'
   s.homepage = 'https://github.com/deseretbook/classy_hash'
 
-  s.required_ruby_version = '>= 1.9.3'
+  s.required_ruby_version = '>= 2.0'
 end
