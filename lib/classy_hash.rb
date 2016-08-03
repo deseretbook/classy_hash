@@ -81,9 +81,11 @@ module ClassyHash
       elsif c.is_a?(Array)
         "[#{self.multiconstraint_string(c, value)}]"
       elsif c.is_a?(Proc)
-        c.call(value) || c.inspect
+        c.call(value) || "a value accepted by #{c.inspect}"
       elsif c == :optional
         nil
+      elsif c == TrueClass || c == FalseClass
+        'true or false'
       else
         c.inspect
       end

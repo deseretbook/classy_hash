@@ -3,11 +3,7 @@
 # Copyright (C)2014 Deseret Book
 # See LICENSE and README.md for details.
 
-require 'spec_helper'
-
-require 'classy_hash'
-
-RSpec.describe ClassyHash do
+describe ClassyHash do
   # A list of test data and expected values for automated integration test creation
   classy_data = [
     {
@@ -519,11 +515,11 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects basic invalid values' do
-      expect{ ClassyHash.validate({a: nil}, {a: String}) }.to raise_error
-      expect{ ClassyHash.validate({a: 3}, {a: String}) }.to raise_error
-      expect{ ClassyHash.validate({a: false}, {a: Numeric}) }.to raise_error
-      expect{ ClassyHash.validate({a: {q: :q}}, {a: Array}) }.to raise_error
-      expect{ ClassyHash.validate({a: [:q, :q]}, {a: Hash}) }.to raise_error
+      expect{ ClassyHash.validate({a: nil}, {a: String}) }.to raise_error(/not.*String/)
+      expect{ ClassyHash.validate({a: 3}, {a: String}) }.to raise_error(/not.*String/)
+      expect{ ClassyHash.validate({a: false}, {a: Numeric}) }.to raise_error(/not.*Numeric/)
+      expect{ ClassyHash.validate({a: {q: :q}}, {a: Array}) }.to raise_error(/not.*Array/)
+      expect{ ClassyHash.validate({a: [:q, :q]}, {a: Hash}) }.to raise_error(/not.*Hash/)
     end
 
     it 'accepts fixnum, bignum, float, and rational for numeric' do
@@ -534,9 +530,10 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects float, bignum, and rational for fixnum' do
-      expect{ ClassyHash.validate({a: 1.0}, {a: Fixnum}) }.to raise_error
-      expect{ ClassyHash.validate({a: 1<<200}, {a: Fixnum}) }.to raise_error
-      expect{ ClassyHash.validate({a: Rational(1, 3)}, {a: Fixnum}) }.to raise_error
+      # TODO: Ruby 2.4 merges Bignum and Fixnum into Integer
+      expect{ ClassyHash.validate({a: 1.0}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
+      expect{ ClassyHash.validate({a: 1<<200}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
+      expect{ ClassyHash.validate({a: Rational(1, 3)}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
     end
 
     it 'accepts valid multiple choice values' do
@@ -548,10 +545,10 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects invalid multiple choice values' do
-      expect{ ClassyHash.validate({a: nil}, {a: [String]}) }.to raise_error
-      expect{ ClassyHash.validate({a: false}, {a: [NilClass]}) }.to raise_error
-      expect{ ClassyHash.validate({a: 1}, {a: [String]}) }.to raise_error
-      expect{ ClassyHash.validate({a: 1}, {a: [String, Rational, NilClass]}) }.to raise_error
+      expect{ ClassyHash.validate({a: nil}, {a: [String]}) }.to raise_error(/one of.*String/)
+      expect{ ClassyHash.validate({a: false}, {a: [NilClass]}) }.to raise_error(/one of.*Nil/)
+      expect{ ClassyHash.validate({a: 1}, {a: [String]}) }.to raise_error(/one of.*String/)
+      expect{ ClassyHash.validate({a: 1}, {a: [String, Rational, NilClass]}) }.to raise_error(/one of.*String.*Rational.*Nil/)
     end
 
     it 'accepts both true and false for just TrueClass or just FalseClass' do
@@ -565,10 +562,10 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects invalid values for TrueClass and FalseClass' do
-      expect{ ClassyHash.validate({a: 1}, {a: TrueClass}) }.to raise_error
-      expect{ ClassyHash.validate({a: 0}, {a: FalseClass}) }.to raise_error
-      expect{ ClassyHash.validate({a: 1}, {a: [TrueClass]}) }.to raise_error
-      expect{ ClassyHash.validate({a: 0}, {a: [FalseClass]}) }.to raise_error
+      expect{ ClassyHash.validate({a: 1}, {a: TrueClass}) }.to raise_error(/true or false/)
+      expect{ ClassyHash.validate({a: 0}, {a: FalseClass}) }.to raise_error(/true or false/)
+      expect{ ClassyHash.validate({a: 1}, {a: [TrueClass]}) }.to raise_error(/one of.*true or false/)
+      expect{ ClassyHash.validate({a: 0}, {a: [FalseClass]}) }.to raise_error(/one of.*true or false/)
     end
 
     it 'requires both TrueClass and FalseClass for true or false in multiple choices' do
@@ -584,10 +581,10 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects invalid single-choice arrays' do
-      expect{ ClassyHash.validate({a: [nil]}, {a: [[String]]}) }.to raise_error
-      expect{ ClassyHash.validate({a: ['hi', 'hello', 'heya', :optional]}, {a: [[String]]}) }.to raise_error
-      expect{ ClassyHash.validate({a: [1]}, {a: [[String]]}) }.to raise_error
-      expect{ ClassyHash.validate({a: [1, 2, 3, '']}, {a: [[Integer]]}) }.to raise_error(/\[3\]/)
+      expect{ ClassyHash.validate({a: [nil]}, {a: [[String]]}) }.to raise_error(/\[0\].*String/)
+      expect{ ClassyHash.validate({a: ['hi', 'hello', 'heya', :optional]}, {a: [[String]]}) }.to raise_error(/\[3\].*String/)
+      expect{ ClassyHash.validate({a: [1]}, {a: [[String]]}) }.to raise_error(/\[0\].*String/)
+      expect{ ClassyHash.validate({a: [1, 2, 3, '']}, {a: [[Integer]]}) }.to raise_error(/\[3\].*Integer/)
     end
 
     it 'accepts valid multiple-choice arrays' do
@@ -599,10 +596,11 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects invalid multiple-choice arrays' do
-      expect{ ClassyHash.validate({a: [nil]}, {a: [[String]]}) }.to raise_error
-      expect{ ClassyHash.validate({a: ['hi', 'hello', 'heya', :optional]}, {a: [[String]]}) }.to raise_error
-      expect{ ClassyHash.validate({a: [1]}, {a: [[String]]}) }.to raise_error
-      expect{ ClassyHash.validate({a: [1, 2, 3, '']}, {a: [[Integer]]}) }.to raise_error(/\[3\]/)
+      schema = { a: [[String, TrueClass, Float]] }
+      expect{ ClassyHash.validate({a: [nil]}, schema) }.to raise_error(/\[0\].*String.*true or false.*Float/)
+      expect{ ClassyHash.validate({a: ['hi', 'hello', 'heya', :optional]}, schema) }.to raise_error(/\[3\].*String.*true or false.*Float/)
+      expect{ ClassyHash.validate({a: [1]}, schema) }.to raise_error(/\[0\].*String.*true or false.*Float/)
+      expect{ ClassyHash.validate({a: [1, 2, 3, '']}, {a: [[Integer, Float]]}) }.to raise_error(/\[3\].*Integer.*Float/)
     end
 
     it 'accepts valid arrays with schemas' do
@@ -616,13 +614,13 @@ RSpec.describe ClassyHash do
 
     it 'handles more than one key' do
       expect{ ClassyHash.validate({a: true, b: 'str'}, {a: TrueClass, b: String}) }.not_to raise_error
-      expect{ ClassyHash.validate({a: 'str', b: true}, {a: TrueClass, b: String}) }.to raise_error
+      expect{ ClassyHash.validate({a: 'str', b: true}, {a: TrueClass, b: String}) }.to raise_error(/:a.*true or false/)
     end
 
     it 'rejects hashes with missing keys' do
-      expect{ ClassyHash.validate({}, {a: NilClass}) }.to raise_error
-      expect{ ClassyHash.validate({}, {a: Integer}) }.to raise_error
-      expect{ ClassyHash.validate({a: 1}, {a: Integer, b: NilClass}) }.to raise_error
+      expect{ ClassyHash.validate({}, {a: NilClass}) }.to raise_error(/:a.*present/)
+      expect{ ClassyHash.validate({}, {a: Integer}) }.to raise_error(/:a.*present/)
+      expect{ ClassyHash.validate({a: 1}, {a: Integer, b: NilClass}) }.to raise_error(/:b.*present/)
     end
 
     it 'accepts valid or missing optional keys' do
@@ -639,25 +637,25 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects invalid optional keys' do
-      expect{ ClassyHash.validate({a: nil}, {a: [:optional, Integer]}) }.to raise_error
-      expect{ ClassyHash.validate({a: 'str'}, {a: [:optional, Integer]}) }.to raise_error
-      expect{ ClassyHash.validate({a: :sym1}, {a: [:optional, Integer, String]}) }.to raise_error
+      expect{ ClassyHash.validate({a: nil}, {a: [:optional, Integer]}) }.to raise_error(/:a.*Integer/)
+      expect{ ClassyHash.validate({a: 'str'}, {a: [:optional, Integer]}) }.to raise_error(/:a.*Integer/)
+      expect{ ClassyHash.validate({a: :sym1}, {a: [:optional, Integer, String]}) }.to raise_error(/:a.*one of.*Integer.*String/)
     end
 
     it 'rejects invalid optional arrays' do
-      expect{ ClassyHash.validate({a: [5.5]}, {a: [:optional, [[Integer]] ]}) }.to raise_error
+      expect{ ClassyHash.validate({a: [5.5]}, {a: [:optional, [[Integer]] ]}) }.to raise_error(/\[0\].*Integer/)
       expect{ ClassyHash.validate({a: [1, 2, 3, 'str']}, {a: [:optional, [[Integer]] ]}) }.to raise_error(/\[3\]/)
     end
 
     it 'accepts missing optional member with proc that would always fail' do
       # We can ensure a member is *never* present with this construct
       expect{ ClassyHash.validate({}, {a: [:optional, lambda {|v| false}]}) }.not_to raise_error
-      expect{ ClassyHash.validate({a: nil}, {a: [:optional, lambda {|v| false}]}) }.to raise_error
+      expect{ ClassyHash.validate({a: nil}, {a: [:optional, lambda {|v| false}]}) }.to raise_error(/accepted by/)
     end
 
     it 'accepts or rejects hashes using a proc' do
       expect{ ClassyHash.validate({a: 1}, {a: lambda {|v| v == 1}}) }.not_to raise_error
-      expect{ ClassyHash.validate({a: -1}, {a: lambda {|v| v == 1}}) }.to raise_error
+      expect{ ClassyHash.validate({a: -1}, {a: lambda {|v| v == 1}}) }.to raise_error(/accepted by Proc/)
     end
 
     it 'uses error messages returned by a proc' do
@@ -672,10 +670,10 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects out-of-range values using a range' do
-      expect{ ClassyHash.validate({a: 0}, {a: 1..2}) }.to raise_error
-      expect{ ClassyHash.validate({a: Rational(1, 2)}, {a: 1.0..2.0}) }.to raise_error
-      expect{ ClassyHash.validate({a: 'spinach'}, {a: 'cabbage'..'cauliflower'}) }.to raise_error
-      expect{ ClassyHash.validate({a: [2, 1]}, {a: [0]..[2]}) }.to raise_error
+      expect{ ClassyHash.validate({a: 0}, {a: 1..2}) }.to raise_error(/in range/)
+      expect{ ClassyHash.validate({a: Rational(1, 2)}, {a: 1.0..2.0}) }.to raise_error(/in range/)
+      expect{ ClassyHash.validate({a: 'spinach'}, {a: 'cabbage'..'cauliflower'}) }.to raise_error(/in range/)
+      expect{ ClassyHash.validate({a: [2, 1]}, {a: [0]..[2]}) }.to raise_error(/in range/)
     end
 
     it 'rejects invalid types using a range' do
@@ -689,7 +687,7 @@ RSpec.describe ClassyHash do
     end
 
     it 'rejects invalid schema elements' do
-      expect{ ClassyHash.validate({a: 1}, {a: :invalid}) }.to raise_error
+      expect{ ClassyHash.validate({a: 1}, {a: :invalid}) }.to raise_error(/valid.*constraint/)
     end
 
     it 'rejects empty multiple choice constraints' do
@@ -740,9 +738,9 @@ RSpec.describe ClassyHash do
     context 'schema is empty' do
       it 'rejects all non-empty hashes' do
         expect{ ClassyHash.validate_strict({}, {}) }.not_to raise_error
-        expect{ ClassyHash.validate_strict({a: 1}, {}) }.to raise_error
-        expect{ ClassyHash.validate_strict({[1] => [2]}, {}) }.to raise_error
-        expect{ ClassyHash.validate_strict({ {} => {} }, {}) }.to raise_error
+        expect{ ClassyHash.validate_strict({a: 1}, {}) }.to raise_error(/not specified/)
+        expect{ ClassyHash.validate_strict({[1] => [2]}, {}) }.to raise_error(/not specified/)
+        expect{ ClassyHash.validate_strict({ {} => {} }, {}) }.to raise_error(/not specified/)
       end
     end
   end

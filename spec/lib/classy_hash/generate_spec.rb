@@ -3,11 +3,7 @@
 # Copyright (C)2014 Deseret Book
 # See LICENSE and README.md for details.
 
-require 'spec_helper'
-
-require 'classy_hash'
-
-RSpec.describe CH::G do
+describe CH::G do
   describe '.enum' do
     let(:int_schema) do
       { a: CH::G.enum(1, 2, 3, 4, 5) }
