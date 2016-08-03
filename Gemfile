@@ -19,5 +19,8 @@ gem 'msgpack', groups: [:benchmark, :test]
 # RSpec for tests
 gem 'rspec', group: :test
 
-# SimpleCov for test coverage
+# SimpleCov for offline test coverage
 gem 'simplecov', '~> 0.7.1', require: false, group: :test
+
+# Code Climate for online test coverage
+gem 'codeclimate-test-reporter', require: false, group: :test
