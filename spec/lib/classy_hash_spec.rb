@@ -3,11 +3,7 @@
 # Copyright (C)2014 Deseret Book
 # See LICENSE and README.md for details.
 
-require 'spec_helper'
-
-require 'classy_hash'
-
-RSpec.describe ClassyHash do
+describe ClassyHash do
   # A list of test data and expected values for automated integration test creation
   classy_data = [
     {
