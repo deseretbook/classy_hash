@@ -160,6 +160,16 @@ module ClassyHash
         self.raise_error(parent_path, key, "an element of #{constraint.to_a.inspect}")
       end
 
+    when CH::G::Composite
+      constraint.constraints.each do |c|
+        # TODO: negative constraints
+        begin
+          self.check_one(key, value, c, parent_path)
+        rescue => e
+          self.raise_error(parent_path, key, constraint.describe(value))
+        end
+      end
+
     when :optional
       # Optional key marker in multiple choice validators
       nil
