@@ -681,6 +681,26 @@ describe ClassyHash do
       expect{ ClassyHash.validate({a: 1}, {a: 'a'..'z'}) }.to raise_error(/String/)
     end
 
+    it 'accepts valid values using a Set' do
+      expect{ ClassyHash.validate({a: 1}, {a: Set.new([1, '2', 3, nil])}) }.not_to raise_error
+      expect{ ClassyHash.validate({a: '2'}, {a: Set.new([1, '2', 3, nil])}) }.not_to raise_error
+      expect{ ClassyHash.validate({a: 3}, {a: Set.new([1, '2', 3, nil])}) }.not_to raise_error
+      expect{ ClassyHash.validate({a: nil}, {a: Set.new([1, '2', 3, nil])}) }.not_to raise_error
+    end
+
+    it 'rejects invalid values using a Set' do
+      # Empty set
+      expect{ ClassyHash.validate({a: 1}, {a: Set.new}) }.to raise_error(/element.*\[\]/)
+      expect{ ClassyHash.validate({a: nil}, {a: Set.new}) }.to raise_error(/element.*\[\]/)
+      expect{ ClassyHash.validate({b: :missing}, {a: Set.new}) }.to raise_error(/not present/)
+
+      # Non-empty set
+      expect{ ClassyHash.validate({a: '1'}, {a: Set.new([1, '2', 3, nil])}) }.to raise_error(/element/)
+      expect{ ClassyHash.validate({a: 2}, {a: Set.new([1, '2', 3, nil])}) }.to raise_error(/element/)
+      expect{ ClassyHash.validate({a: nil}, {a: Set.new([1, '2', 3])}) }.to raise_error(/element/)
+      expect{ ClassyHash.validate({b: :missing}, {a: Set.new([1, '2', 3, nil])}) }.to raise_error(/not present/)
+    end
+
     it 'rejects non-hashes' do
       expect{ ClassyHash.validate(false, {}) }.to raise_error(/hash/i)
       expect{ ClassyHash.validate({}, false) }.to raise_error(/hash/i)
