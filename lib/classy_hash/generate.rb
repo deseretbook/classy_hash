@@ -5,8 +5,10 @@ module ClassyHash
   # This module contains helpers that generate constraints for common
   # ClassyHash validation tasks.
   module Generate
-    # Generates a ClassyHash constraint that ensures a value is equal to one of
-    # the arguments in +args+.
+    # Deprecated.  Generates a ClassyHash constraint that ensures a value is
+    # equal to one of the arguments in +args+.
+    #
+    # For new schemas, consider creating a Set with the enumeration elements.
     #
     # Example:
     #     schema = {
@@ -14,9 +16,7 @@ module ClassyHash
     #     }
     #     ClassyHash.validate({ a: 1 }, schema)
     def self.enum(*args)
-      lambda {|v|
-        args.include?(v) || "an element of #{args.inspect}"
-      }
+      Set.new(args)
     end
 
     # Generates a constraint that imposes a length limitation (an exact length

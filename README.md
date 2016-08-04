@@ -340,7 +340,8 @@ base Classy Hash syntax.
 
 ##### Enumeration
 
-The simplest generator checks for a set of exact values.
+As of version 0.2.0, the `enum` generator is a deprecated compatibility method
+that generates a `Set`.  See the above documentation for `Set` constraints.
 
 ```ruby
 # Enumerator -- value must be one of the elements provided
