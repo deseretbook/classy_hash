@@ -217,6 +217,22 @@ ClassyHash.validate({ key1: 1 }, schema) # Okay
 ClassyHash.validate({ key1: 2 }, schema) # Throws ":key1 is not an odd integer"
 ```
 
+#### Sets
+
+Added in version 0.2.0, `Set`s constrain a value to one of a list of values.
+The `Set` constraint replaces the `enum` generator.  Note that a `Set` requires
+an *exact* value match, unlike the Multiple Choice constraint.
+
+```ruby
+schema = {
+  key1: Set.new([1, 2, 3, 'see?'])
+}
+
+ClassyHash.validate({ key1: 1 }, schema) # Okay
+ClassyHash.validate({ key1: 'see?' }, schema) # Okay
+ClassyHash.validate({ key1: 4 }, schema) # Throws ":key1 is not an element of [1, 2, 3, 'see?']"
+```
+
 #### Nested schemas
 
 Classy Hash accepts nested schemas.  You can also use a schema as one of the
