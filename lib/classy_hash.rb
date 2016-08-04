@@ -1,7 +1,9 @@
 # Classy Hash: Keep Your Hashes Classy
 # Created May 2014 by Mike Bourgeous, DeseretBook.com
-# Copyright (C)2014 Deseret Book
+# Copyright (C)2016 Deseret Book
 # See LICENSE and README.md for details.
+
+require 'set'
 
 # This module contains the ClassyHash methods for making sure Ruby Hash objects
 # match a given schema.  ClassyHash runs fast by taking advantage of Ruby
@@ -150,6 +152,12 @@ module ClassyHash
 
       unless constraint.cover?(value)
         self.raise_error(parent_path, key, "in range #{constraint.inspect}")
+      end
+
+    when Set
+      # Set/enumeration
+      unless constraint.include?(value)
+        self.raise_error(parent_path, key, "an element of #{constraint.to_a.inspect}")
       end
 
     when :optional
