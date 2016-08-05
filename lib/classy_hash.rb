@@ -77,17 +77,22 @@ module ClassyHash
 
   # Generates a semi-compact String describing the given +constraints+.
   def self.multiconstraint_string(constraints, value)
+    # TODO: Move all constraint description generation into this method?
+
     constraints.map{|c|
       if c.is_a?(Hash)
         "{...schema...}"
       elsif c.is_a?(Array)
         "[#{self.multiconstraint_string(c, value)}]"
       elsif c.is_a?(Proc)
-        c.call(value) || "a value accepted by #{c.inspect}"
+        v = c.call(value)
+        v.is_a?(String) ? v : "a value accepted by #{c.inspect}"
       elsif c == :optional
         nil
       elsif c == TrueClass || c == FalseClass
         'true or false'
+      elsif c.is_a?(CH::G::Composite)
+        c.describe(value)
       else
         c.inspect
       end
@@ -162,11 +167,19 @@ module ClassyHash
 
     when CH::G::Composite
       constraint.constraints.each do |c|
-        # TODO: negative constraints
+        # TODO: don't use exceptions internally; they are slow
+        negfail = false
         begin
           self.check_one(key, value, c, parent_path)
+
+          if constraint.negate
+            negfail = true
+            self.raise_error(parent_path, key, constraint.describe(value))
+          end
         rescue => e
-          self.raise_error(parent_path, key, constraint.describe(value))
+          unless constraint.negate && !negfail
+            self.raise_error(parent_path, key, constraint.describe(value))
+          end
         end
       end
 

@@ -11,7 +11,7 @@ module ClassyHash
       attr_reader :constraints
 
       # True if the constraints must all not match, false if they must all
-      # match.  TODO: implement
+      # match.
       attr_reader :negate
 
       # Initializes a composite constraint with the given Array of
@@ -27,14 +27,14 @@ module ClassyHash
       # Returns a String describing the composite constraint failing against
       # the given +value+.
       def describe(value)
-        # FIXME: multiconstraint_string will give the wrong value for procs here if value isn't given
-        # TODO: find a way to cache?
-        "#{negate ? 'none' : 'all'} of #{CH.multiconstraint_string(constraints, nil)}"
+        "#{negate ? 'none' : 'all'} of [#{CH.multiconstraint_string(constraints, value)}]"
       end
     end
 
     # Generates a constraint that requires a value to match *all* of the given
-    # constraints.
+    # constraints.  If no constraints are given, always passes.
+    #
+    # Raises an error if no constraints are given.
     #
     # Example:
     #     schema = {
@@ -47,6 +47,8 @@ module ClassyHash
 
     # Generates a constraint that requires a value to match *none* of the given
     # constraints.
+    #
+    # Raises an error if no constraints are given.
     #
     # Example:
     #     schema = {
