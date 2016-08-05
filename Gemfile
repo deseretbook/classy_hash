@@ -24,3 +24,7 @@ gem 'simplecov', '~> 0.12.0', require: false, group: :test
 
 # Code Climate for online test coverage
 gem 'codeclimate-test-reporter', require: false, group: :test
+
+# Pry for debugging while developing
+gem 'pry', require: false, group: :development
+gem 'pry-byebug', require: false, group: :development, platforms: :mri

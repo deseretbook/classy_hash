@@ -221,7 +221,8 @@ ClassyHash.validate({ key1: 2 }, schema) # Throws ":key1 is not an odd integer"
 
 Added in version 0.2.0, `Set`s constrain a value to one of a list of values.
 The `Set` constraint replaces the `enum` generator.  Note that a `Set` requires
-an *exact* value match, unlike the Multiple Choice constraint.
+an *exact* value match, unlike the Multiple Choice constraint or Composite
+generator.
 
 ```ruby
 schema = {
@@ -337,6 +338,57 @@ Version 0.1.1 of Classy Hash introduces some helper methods in
 `ClassyHash::Generate` (or the `CH::G` alias introduced in 0.1.2) that will
 generate a constraint for common tasks that are difficult to represent in the
 base Classy Hash syntax.
+
+##### Composite and negated constraints
+
+You can combine multiple constraints in an AND or NAND fashion using the
+Composite generators, `.all` and `.not`.  Because composite constraints
+can be complex and confusing, they should be used only when other
+approaches would be *more* complex and confusing.  Composite constraints
+were added in version 0.2.0.
+
+The `.all` generator requires all constraints to pass.
+
+```ruby
+schema = {
+  key1: CH::G.all(Integer, 1.0..100.0)
+}
+ClassyHash.validate({ key1: 5 }, schema) # Okay
+ClassyHash.validate({ key1: BigDecimal.new(5) }, schema) # Raises ":key1 is not all of [Integer, 1.0..100.0]"
+```
+
+The `.not` generator requires all constraints to fail.
+
+```ruby
+schema = {
+  key1: CH::G.not(Rational, BigDecimal, 'a'..'c', 10..15)
+}
+ClassyHash.validate({ key1: 5 }, schema) # Okay
+ClassyHash.validate({ key1: 10 }, schema) # Raises ":key1 is not none of [Rational, BigDecimal, "a".."c", 10..15]"
+ClassyHash.validate({ key1: Rational(3, 5) }, schema) # Raises ":key1 is not none of [Rational, BigDecimal, "a".."c", 10..15]"
+ClassyHash.validate({ key1: 'Good' }, schema) # Okay
+ClassyHash.validate({ key1: 'broken' }, schema) # Raises ":key1 is not none of [Rational, BigDecimal, "a".."c", 10..15]"
+```
+
+The `.all` and `.not` generators become more useful when combined:
+
+```ruby
+schema = {
+  # Note: this case could also be represented as key1: [1..9, 21..100]
+  # Also note that Float ranges are used because ClassyHash only accepts
+  # Integer values for Integer ranges; this is important for .not().
+  key1: CH::G.all(Integer, 1.0..100.0, CH::G.not(10.0..20.0))
+}
+ClassyHash.validate({ key1: 9 }, schema) # Okay
+ClassyHash.validate({ key1: 10 }, schema) # Raises :key1 is not all of [Integer, 1.0..100.0, none of [10.0..20.0]]
+ClassyHash.validate({ key1: 25.0 }, schema) # Raises :key1 is not all of [Integer, 1.0..100.0, none of [10.0..20.0]]
+```
+
+Note that `.not` may accept a value for reasons you don't expect, since
+its parameters are treated as ordinary ClassyHash constraints, and only
+requires that its constraints raise some kind of error.  For example,
+`CH::G.not(5..10)` will allow `6.0` but not `6`.
+
 
 ##### Enumeration
 
