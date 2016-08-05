@@ -167,9 +167,9 @@ ClassyHash.validate({ key1: 'Start now, continue to the end' }, schema) # Okay
 #### Ranges and lambdas
 
 If you want to check more than just the type of a value, you can specify a
-`Range` or a `Proc` as a constraint.  If your `Range` endpoints are `Integer`s,
-`Numeric`s, or `String`s, then Classy Hash will also restrict the type of the
-value to `Integer`, `Numeric`, or `String`.
+`Range` as a constraint.  If your `Range` endpoints are `Integer`s, `Numeric`s,
+or `String`s, then Classy Hash will also restrict the type of the value to
+`Integer`, `Numeric`, or `String`.
 
 ```ruby
 # An Integer range
@@ -192,10 +192,14 @@ ClassyHash.validate({ key1: [2, 3, 4] }, schema) # Okay
 ClassyHash.validate({ key1: [5, 0] }, schema) # Throws ":key1 is not in range [1]..[5]"
 ```
 
-When using a `Proc`, you should accept exactly one parameter and return `true`
-if validation succeeds.  Any other value will be treated as a validation
-failure.  If the `Proc` returns a `String`, that string will be used in the
-error message.
+#### Procs
+
+If nothing else will do, you can pass a `Proc`/`lambda`.  The `Proc` should
+have no side effects, as it may be called more than once per value.  When using
+a `Proc`, you should accept exactly one parameter and return `true` if
+validation succeeds.  Any other value will be treated as a validation failure.
+If the `Proc` returns a `String`, that string will be used in the error
+message.
 
 ```ruby
 # A lambda without an error message
