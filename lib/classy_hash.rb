@@ -15,6 +15,30 @@ module ClassyHash
   # no-value symbol.
   NO_VALUE = "__ch_no_value_#{SecureRandom.hex(10)}".to_sym
 
+  # New WIP implementation of validation with better internal state tracking
+  # allowing error accumulation.
+  #
+  # TODO: document
+  #
+  # Parameters
+  #   hash - The Hash to validate.
+  #   schema - The schema against which to validate.
+  #   :strict - If true, rejects Hashes with members not in the schema.
+  #   :full - If true, gathers all invalid values.  If false, stops checking at
+  #           the first invalid value.
+  #   :verbose - If true, the error message for failed strictness will include
+  #              the names of the unexpected keys.  Note that this can be a
+  #              security risk if the key names are controlled by an attacker
+  #              and the result is sent via HTTPS (see e.g. the CRIME attack).
+  #   :raise - If true, any errors will be raised.  If false, they will be
+  #            returned as a String.  Default is true.  TODO: implement
+  #   :parent_path - Used internally for tracking the current validation path.
+  #   :errors - Used internally for aggregating error messages.
+  def self.validate_new(hash, schema, strict: false, full: false, verbose: false,
+                        raise: true, parent_path: nil, errors: nil)
+
+    # TODO / XXX
+  end
 
   # Validates a +hash+ against a +schema+.  The +parent_path+ parameter is used
   # internally to generate error messages.
