@@ -4,11 +4,18 @@
 # See LICENSE and README.md for details.
 
 require 'set'
+require 'securerandom'
 
 # This module contains the ClassyHash methods for making sure Ruby Hash objects
 # match a given schema.  ClassyHash runs fast by taking advantage of Ruby
 # language features and avoiding object creation during validation.
 module ClassyHash
+  # Internal symbol representing the absence of a value for error message
+  # generation.  Generated at runtime to prevent potential malicious use of the
+  # no-value symbol.
+  NO_VALUE = "__ch_no_value_#{SecureRandom.hex(10)}".to_sym
+
+
   # Validates a +hash+ against a +schema+.  The +parent_path+ parameter is used
   # internally to generate error messages.
   def self.validate(hash, schema, parent_path=nil)
@@ -19,7 +26,7 @@ module ClassyHash
       if hash.include?(key)
         self.check_one(key, hash[key], constraint, parent_path)
       elsif !(constraint.is_a?(Array) && constraint.include?(:optional))
-        self.raise_error(parent_path, key, "present")
+        self.raise_error(parent_path, key, "present", NO_VALUE)
       end
     end
 
@@ -51,7 +58,12 @@ module ClassyHash
   # choice +constraints+.
   def self.check_multi(key, value, constraints, parent_path=nil)
     if constraints.length == 0
-        self.raise_error(parent_path, key, "a valid multiple choice constraint (array must not be empty)")
+      self.raise_error(
+        parent_path,
+        key,
+        "a valid multiple choice constraint (array must not be empty)",
+        NO_VALUE
+      )
     end
 
     # Optimize the common case of a direct class match
@@ -72,31 +84,68 @@ module ClassyHash
       end
     end
 
-    self.raise_error(parent_path, key, "one of #{multiconstraint_string(constraints, value)}")
+    self.raise_error(parent_path, key, constraints, value)
   end
 
-  # Generates a semi-compact String describing the given +constraints+.
-  def self.multiconstraint_string(constraints, value)
-    # TODO: Move all constraint description generation into this method?
+  # Generates a String describing the +value+'s failure to match the
+  # +constraint+.  The value itself should not be included in the string to
+  # avoid attacker-controlled plaintext.  If +value+ is CH::NO_VALUE, then
+  # generic error messages will be used for constraints (e.g. Procs) that would
+  # otherwise have been value-dependent.
+  def self.constraint_string(constraint, value)
+    case constraint
+    when Hash
+      "a Hash matching {schema with keys #{constraint.keys.inspect}}"
 
-    constraints.map{|c|
-      if c.is_a?(Hash)
-        "{...schema...}"
-      elsif c.is_a?(Array)
-        "[#{self.multiconstraint_string(c, value)}]"
-      elsif c.is_a?(Proc)
-        v = c.call(value)
-        v.is_a?(String) ? v : "a value accepted by #{c.inspect}"
-      elsif c == :optional
-        nil
-      elsif c == TrueClass || c == FalseClass
+    when Class
+      if constraint == TrueClass || constraint == FalseClass
         'true or false'
-      elsif c.is_a?(CH::G::Composite)
-        c.describe(value)
       else
-        c.inspect
+        "a/an #{constraint}"
       end
-    }.compact.join(', ')
+
+    when Array
+      if constraint.length == 1 && constraint.first.is_a?(Array)
+        "an Array of #{constraint_string(constraint.first, NO_VALUE)}"
+      else
+        "one of #{constraint.map{|c| constraint_string(c, value) }.join(', ')}"
+      end
+
+    when Regexp
+      "a String matching #{constraint.inspect}"
+
+    when Proc
+      if value != NO_VALUE && (result = constraint.call(value)).is_a?(String)
+        result
+      else
+        # TODO: does Proc#inspect give too much information about source code
+        # layout to an attacker?
+        "accepted by #{constraint.inspect}"
+      end
+
+    when Range
+      base = "in range #{constraint.inspect}"
+
+      if constraint.min.is_a?(Integer) && constraint.max.is_a?(Integer)
+        "an Integer #{base}"
+      elsif constraint.min.is_a?(Numeric)
+        "a Numeric #{base}"
+      elsif constraint.min.is_a?(String)
+        "a String #{base}"
+      else
+        base
+      end
+
+    when Set
+      "an element of #{constraint.to_a.inspect}"
+
+    when CH::G::Composite
+      constraint.describe(value)
+
+    else
+      "a valid schema constraint: #{constraint.inspect}"
+
+    end
   end
 
   # Checks a single value against a single constraint.
@@ -106,22 +155,22 @@ module ClassyHash
       # Constrain value to be a specific class
       if constraint == TrueClass || constraint == FalseClass
         unless value == true || value == false
-          self.raise_error(parent_path, key, "true or false")
+          self.raise_error(parent_path, key, constraint, value)
         end
       elsif !value.is_a?(constraint)
-        self.raise_error(parent_path, key, "a/an #{constraint}")
+        self.raise_error(parent_path, key, constraint, value)
       end
 
     when Hash
       # Recursively check nested Hashes
-      self.raise_error(parent_path, key, "a Hash") unless value.is_a?(Hash)
+      self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Hash)
       self.validate(value, constraint, self.join_path(parent_path, key))
 
     when Array
       # Multiple choice or array validation
       if constraint.length == 1 && constraint.first.is_a?(Array)
         # Array validation
-        self.raise_error(parent_path, key, "an Array") unless value.is_a?(Array)
+        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Array)
 
         constraints = constraint.first
         value.each_with_index do |v, idx|
@@ -135,34 +184,34 @@ module ClassyHash
     when Regexp
       # Constrain value to be a String matching a Regexp
       unless value.is_a?(String) && value =~ constraint
-        self.raise_error(parent_path, key, "a String matching #{constraint.inspect}")
+        self.raise_error(parent_path, key, constraint, value)
       end
 
     when Proc
       # User-specified validator
       result = constraint.call(value)
       if result != true
-        self.raise_error(parent_path, key, result.is_a?(String) ? result : "accepted by Proc")
+        self.raise_error(parent_path, key, constraint, value)
       end
 
     when Range
       # Range (with type checking for common classes)
       if constraint.min.is_a?(Integer) && constraint.max.is_a?(Integer)
-        self.raise_error(parent_path, key, "an Integer") unless value.is_a?(Integer)
+        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Integer)
       elsif constraint.min.is_a?(Numeric)
-        self.raise_error(parent_path, key, "a Numeric") unless value.is_a?(Numeric)
+        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Numeric)
       elsif constraint.min.is_a?(String)
-        self.raise_error(parent_path, key, "a String") unless value.is_a?(String)
+        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(String)
       end
 
       unless constraint.cover?(value)
-        self.raise_error(parent_path, key, "in range #{constraint.inspect}")
+        self.raise_error(parent_path, key, constraint, value)
       end
 
     when Set
       # Set/enumeration
       unless constraint.include?(value)
-        self.raise_error(parent_path, key, "an element of #{constraint.to_a.inspect}")
+        self.raise_error(parent_path, key, constraint, value)
       end
 
     when CH::G::Composite
@@ -174,11 +223,11 @@ module ClassyHash
 
           if constraint.negate
             negfail = true
-            self.raise_error(parent_path, key, constraint.describe(value))
+            self.raise_error(parent_path, key, constraint, value)
           end
         rescue => e
           unless constraint.negate && !negfail
-            self.raise_error(parent_path, key, constraint.describe(value))
+            self.raise_error(parent_path, key, constraint, value)
           end
         end
       end
@@ -189,7 +238,7 @@ module ClassyHash
 
     else
       # Unknown schema constraint
-      self.raise_error(parent_path, key, "a valid schema constraint: #{constraint.inspect}")
+      self.raise_error(parent_path, key, constraint, value)
     end
 
     nil
@@ -201,8 +250,9 @@ module ClassyHash
 
   # Raises an error indicating that the given +key+ under the given
   # +parent_path+ fails because the value "is not #{+message+}".
-  def self.raise_error(parent_path, key, message)
+  def self.raise_error(parent_path, key, constraint, value)
     # TODO: Ability to validate all keys
+    message = constraint.is_a?(String) ? constraint : constraint_string(constraint, value)
     raise "#{self.join_path(parent_path, key)} is not #{message}"
   end
 end

@@ -27,7 +27,7 @@ module ClassyHash
       # Returns a String describing the composite constraint failing against
       # the given +value+.
       def describe(value)
-        "#{negate ? 'none' : 'all'} of [#{CH.multiconstraint_string(constraints, value)}]"
+        "#{negate ? 'none' : 'all'} of [#{CH.constraint_string(constraints, value)}]"
       end
     end
 

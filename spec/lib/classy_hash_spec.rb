@@ -655,7 +655,7 @@ describe ClassyHash do
 
     it 'accepts or rejects hashes using a proc' do
       expect{ ClassyHash.validate({a: 1}, {a: lambda {|v| v == 1}}) }.not_to raise_error
-      expect{ ClassyHash.validate({a: -1}, {a: lambda {|v| v == 1}}) }.to raise_error(/accepted by Proc/)
+      expect{ ClassyHash.validate({a: -1}, {a: lambda {|v| v == 1}}) }.to raise_error(/accepted by.*Proc/)
     end
 
     it 'uses error messages returned by a proc' do
