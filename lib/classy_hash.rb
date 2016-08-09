@@ -55,7 +55,7 @@ module ClassyHash
       self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Hash)
 
       if strict
-        extra_keys = hash.keys - schema.keys
+        extra_keys = value.keys - constraint.keys
         if extra_keys.any?
           # TODO: faster generation of verbose error message (join is faster than inspect+delete)
           members = "(#{extra_keys.inspect.delete('[]')})" if verbose
@@ -75,7 +75,7 @@ module ClassyHash
             verbose: verbose,
             raise_errors: raise_errors,
             parent_path: join_path(parent_path, k),
-            key: k,
+            key: nil,
             errors: errors
           )
         elsif !(c.is_a?(Array) && c.include?(:optional))
@@ -321,7 +321,7 @@ module ClassyHash
   end
 
   def self.join_path(parent_path, key)
-    puts "\n\n\nJoining parent #{parent_path.inspect} to key #{key.inspect} at #{caller(0, 3)}\n\n\n" # XXX
+    puts "\n\n\nJoining parent #{parent_path.inspect} to key #{key.inspect} at\n\t#{caller(1, 3).join("\n\t")}\n\n\n" # XXX
 
     parent_path ? "#{parent_path}[#{key.inspect}]" : key.inspect
   end
