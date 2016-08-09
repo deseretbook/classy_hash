@@ -739,6 +739,12 @@ describe ClassyHash do
       expect{ ClassyHash.validate({a: {}}, {a: :optional}) }.not_to raise_error
     end
 
+    it 'allows nil to be used as a key' do
+      expect{ ClassyHash.validate({nil => 3}, {nil => Integer}) }.not_to raise_error
+      expect{ ClassyHash.validate({nil => 3}, {nil => String}) }.to raise_error(/nil .*String/)
+      expect{ ClassyHash.validate({nil => {nil => 3}}, {nil => {nil => String}}) }.to raise_error(/nil\[nil\] .*String/)
+    end
+
     context 'schema is empty' do
       it 'accepts all hashes' do
         expect{ ClassyHash.validate({}, {}) }.not_to raise_error
