@@ -21,62 +21,201 @@ module ClassyHash
   # TODO: document
   #
   # Parameters
-  #   hash - The Hash to validate.
-  #   schema - The schema against which to validate.
+  #   value - The Hash or other value to validate.
+  #   constraint - The schema or single constraint against which to validate.
   #   :strict - If true, rejects Hashes with members not in the schema.
   #   :full - If true, gathers all invalid values.  If false, stops checking at
   #           the first invalid value.
   #   :verbose - If true, the error message for failed strictness will include
-  #              the names of the unexpected keys.  Note that this can be a
-  #              security risk if the key names are controlled by an attacker
-  #              and the result is sent via HTTPS (see e.g. the CRIME attack).
-  #   :raise - If true, any errors will be raised.  If false, they will be
-  #            returned as a String.  Default is true.  TODO: implement
-  #   :parent_path - Used internally for tracking the current validation path.
+  #           the names of the unexpected keys.  Note that this can be a
+  #           security risk if the key names are controlled by an attacker and
+  #           the result is sent via HTTPS (see e.g. the CRIME attack).
+  #   :raise_errors - If true, any errors will be raised.  If false, they will
+  #           be returned as a String.  Default is true.  TODO: implement
+  #   :parent_path - Used internally for tracking the current validation path
+  #           in error messages (e.g. :key1[:key2][0]).
+  #   :key - Used internally for tracking the current validation key in error
+  #           messages (e.g. :key1 or 0).
   #   :errors - Used internally for aggregating error messages.
-  def self.validate_new(hash, schema, strict: false, full: false, verbose: false,
-                        raise: true, parent_path: nil, errors: nil)
+  def self.validate_new(value, constraint, strict: false, full: false, verbose: false,
+                        raise_errors: true, parent_path: nil, key: nil, errors: nil)
+    case constraint
+    when Class
+      # Constrain value to be a specific class
+      if constraint == TrueClass || constraint == FalseClass
+        unless value == true || value == false
+          self.raise_error(parent_path, key, constraint, value)
+        end
+      elsif !value.is_a?(constraint)
+        self.raise_error(parent_path, key, constraint, value)
+      end
 
-    # TODO / XXX
+    when Hash
+      # Recursively check nested Hashes
+      self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Hash)
+
+      if strict
+        extra_keys = hash.keys - schema.keys
+        if extra_keys.any?
+          # TODO: faster generation of verbose error message (join is faster than inspect+delete)
+          members = "(#{extra_keys.inspect.delete('[]')})" if verbose
+          raise "Hash contains members #{members} not specified in schema".squeeze(' ')
+        end
+      end
+
+      constraint.each do |k, c|
+        if value.include?(k)
+          # TODO: Benchmark how much slower allocating a state object is than
+          # passing lots of parameters?
+          self.validate_new(
+            value[k],
+            c,
+            strict: strict,
+            full: full,
+            verbose: verbose,
+            raise_errors: raise_errors,
+            parent_path: join_path(parent_path, k),
+            key: k,
+            errors: errors
+          )
+        elsif !(c.is_a?(Array) && c.include?(:optional))
+          self.raise_error(parent_path, k, "present", NO_VALUE)
+        end
+      end
+
+    when Array
+      # Multiple choice or array validation
+      if constraint.length == 1 && constraint.first.is_a?(Array)
+        # Array validation
+        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Array)
+
+        constraints = constraint.first
+        value.each_with_index do |v, idx|
+          self.check_multi(
+            v,
+            constraints,
+            strict: strict,
+            full: full,
+            verbose: verbose,
+            raise_errors: raise_errors,
+            parent_path: join_path(parent_path, key),
+            key: idx,
+            errors: errors
+          )
+        end
+      else
+        # Multiple choice
+        self.check_multi(
+          value,
+          constraint,
+          strict: strict,
+          full: full,
+          verbose: verbose,
+          raise_errors: raise_errors,
+          parent_path: parent_path,
+          key: key,
+          errors: errors
+        )
+      end
+
+    when Regexp
+      # Constrain value to be a String matching a Regexp
+      unless value.is_a?(String) && value =~ constraint
+        self.raise_error(parent_path, key, constraint, value)
+      end
+
+    when Proc
+      # User-specified validator
+      result = constraint.call(value)
+      if result != true
+        self.raise_error(parent_path, key, constraint, value)
+      end
+
+    when Range
+      # Range (with type checking for common classes)
+      if constraint.min.is_a?(Integer) && constraint.max.is_a?(Integer)
+        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Integer)
+      elsif constraint.min.is_a?(Numeric)
+        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Numeric)
+      elsif constraint.min.is_a?(String)
+        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(String)
+      end
+
+      unless constraint.cover?(value)
+        self.raise_error(parent_path, key, constraint, value)
+      end
+
+    when Set
+      # Set/enumeration
+      unless constraint.include?(value)
+        self.raise_error(parent_path, key, constraint, value)
+      end
+
+    when CH::G::Composite
+      constraint.constraints.each do |c|
+        # TODO: don't use exceptions internally; they are slow
+        negfail = false
+        begin
+          self.validate_new(
+            value,
+            c,
+            strict: strict,
+            full: full,
+            verbose: verbose,
+            raise_errors: raise_errors,
+            parent_path: parent_path,
+            key: key,
+            errors: errors
+          )
+
+          if constraint.negate
+            negfail = true
+            self.raise_error(parent_path, key, constraint, value)
+          end
+        rescue => e
+          unless constraint.negate && !negfail
+            self.raise_error(parent_path, key, constraint, value)
+          end
+        end
+      end
+
+    when :optional
+      # Optional key marker in multiple choice validators
+      nil
+
+    else
+      # Unknown schema constraint
+      self.raise_error(parent_path, key, constraint, value)
+    end
+
+    nil
   end
 
   # Validates a +hash+ against a +schema+.  The +parent_path+ parameter is used
   # internally to generate error messages.
-  def self.validate(hash, schema, parent_path=nil, verbose=false, strict=false, deep=false)
+  def self.validate(hash, schema, parent_path=nil, verbose=false, strict=false)
     raise 'Must validate a Hash' unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
     raise 'Schema must be a Hash' unless schema.is_a?(Hash) # TODO: Allow individual element validations?
 
-    if strict && (hash.keys - schema.keys).any?
-      members = "(#{(hash.keys - schema.keys).inspect.delete('[]')})" if verbose
-      raise "Hash contains members #{members} not specified in schema".squeeze(' ')
-    end
-
-    schema.each do |key, constraint|
-      if hash.include?(key)
-        self.check_one(key, hash[key], constraint, parent_path, verbose, deep)
-      elsif !(constraint.is_a?(Array) && constraint.include?(:optional))
-        self.raise_error(parent_path, key, "present", NO_VALUE)
-      end
-    end
-
-    nil
+    validate_new(hash, schema, parent_path: parent_path, verbose: verbose, strict: strict)
   end
 
   # As with #validate, but members not specified in the +schema+ are forbidden.
   # Only the top-level schema is strictly validated.  If +verbose+ is true, the
   # names of unexpected keys will be included in the error message.
   def self.validate_strict(hash, schema, verbose=false, parent_path=nil)
-    validate(hash, schema, parent_path, verbose, true, false)
+    validate_new(hash, schema, parent_path: parent_path, verbose: verbose, strict: true)
   end
 
   # As with #validate_strict, but deep members not specified in the +schema+ are forbidden.
   def self.deep_validate_strict(hash, schema, verbose=false, parent_path=nil)
-    validate(hash, schema, parent_path, verbose, true, true)
+    validate_new(hash, schema, parent_path: parent_path, verbose: verbose, strict: true)
   end
 
   # Raises an error unless the given +value+ matches one of the given multiple
-  # choice +constraints+.
-  def self.check_multi(key, value, constraints, parent_path=nil, verbose=false, strict=false)
+  # choice +constraints+.  Other parameters are used for internal state.
+  def self.check_multi(value, constraints, strict:, full:, verbose:, raise_errors:,
+                       parent_path:, key:, errors:)
     if constraints.length == 0
       self.raise_error(
         parent_path,
@@ -92,11 +231,24 @@ module ClassyHash
     error = nil
     constraints.each do |c|
       next if c == :optional
+
       begin
-        self.check_one(key, value, c, parent_path, verbose, strict)
+        self.validate_new(
+          value,
+          c,
+          strict: strict,
+          full: full,
+          verbose: verbose,
+          raise_errors: raise_errors,
+          parent_path: parent_path,
+          key: key,
+          errors: errors
+        )
+
         return
       rescue => e
         # Throw schema and array errors immediately
+        # FIXME: is this appropriate for something like [:optional, {a: Integer}, {b: Integer}, [[{c: Integer}]]]
         if (c.is_a?(Hash) && value.is_a?(Hash)) ||
           (c.is_a?(Array) && value.is_a?(Array) && c.length == 1 && c.first.is_a?(Array))
           raise e
@@ -168,103 +320,9 @@ module ClassyHash
     end
   end
 
-  # Checks a single value against a single constraint.
-  def self.check_one(key, value, constraint, parent_path=nil, verbose=false, strict=false)
-    case constraint
-    when Class
-      # Constrain value to be a specific class
-      if constraint == TrueClass || constraint == FalseClass
-        unless value == true || value == false
-          self.raise_error(parent_path, key, constraint, value)
-        end
-      elsif !value.is_a?(constraint)
-        self.raise_error(parent_path, key, constraint, value)
-      end
-
-    when Hash
-      # Recursively check nested Hashes
-      self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Hash)
-      self.validate(value, constraint, self.join_path(parent_path, key), verbose, strict, strict)
-
-    when Array
-      # Multiple choice or array validation
-      if constraint.length == 1 && constraint.first.is_a?(Array)
-        # Array validation
-        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Array)
-
-        constraints = constraint.first
-        value.each_with_index do |v, idx|
-          self.check_multi(idx, v, constraints, self.join_path(parent_path, key), verbose, strict)
-        end
-      else
-        # Multiple choice
-        self.check_multi(key, value, constraint, parent_path, verbose, strict)
-      end
-
-    when Regexp
-      # Constrain value to be a String matching a Regexp
-      unless value.is_a?(String) && value =~ constraint
-        self.raise_error(parent_path, key, constraint, value)
-      end
-
-    when Proc
-      # User-specified validator
-      result = constraint.call(value)
-      if result != true
-        self.raise_error(parent_path, key, constraint, value)
-      end
-
-    when Range
-      # Range (with type checking for common classes)
-      if constraint.min.is_a?(Integer) && constraint.max.is_a?(Integer)
-        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Integer)
-      elsif constraint.min.is_a?(Numeric)
-        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Numeric)
-      elsif constraint.min.is_a?(String)
-        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(String)
-      end
-
-      unless constraint.cover?(value)
-        self.raise_error(parent_path, key, constraint, value)
-      end
-
-    when Set
-      # Set/enumeration
-      unless constraint.include?(value)
-        self.raise_error(parent_path, key, constraint, value)
-      end
-
-    when CH::G::Composite
-      constraint.constraints.each do |c|
-        # TODO: don't use exceptions internally; they are slow
-        negfail = false
-        begin
-          self.check_one(key, value, c, parent_path)
-
-          if constraint.negate
-            negfail = true
-            self.raise_error(parent_path, key, constraint, value)
-          end
-        rescue => e
-          unless constraint.negate && !negfail
-            self.raise_error(parent_path, key, constraint, value)
-          end
-        end
-      end
-
-    when :optional
-      # Optional key marker in multiple choice validators
-      nil
-
-    else
-      # Unknown schema constraint
-      self.raise_error(parent_path, key, constraint, value)
-    end
-
-    nil
-  end
-
   def self.join_path(parent_path, key)
+    puts "\n\n\nJoining parent #{parent_path.inspect} to key #{key.inspect} at #{caller(0, 3)}\n\n\n" # XXX
+
     parent_path ? "#{parent_path}[#{key.inspect}]" : key.inspect
   end
 
