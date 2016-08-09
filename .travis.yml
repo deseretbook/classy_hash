@@ -1,11 +1,13 @@
 language: ruby
 sudo: false
 env:
-  - 'JRUBY_OPTS=--debug'
+  global:
+    - 'JRUBY_OPTS=--debug'
 rvm:
   - '2.0'
   - '2.1'
   - '2.2'
   - '2.3.1'
-  - 'jruby-9.0.5'
+  - 'jruby-9'
+before_install: 'if [[ "$TRAVIS_RUBY_VERSION" =~ "jruby" ]]; then rvm get stable && rvm reload && rvm use --install $TRAVIS_RUBY_VERSION; fi'
 script: bundle exec rspec
