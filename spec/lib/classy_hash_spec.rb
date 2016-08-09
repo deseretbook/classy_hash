@@ -751,8 +751,8 @@ describe ClassyHash do
 
   describe '.validate_strict' do
     it 'rejects non-hashes' do
-      expect{ ClassyHash.validate_strict(false, {}) }.to raise_error(/hash/i)
-      expect{ ClassyHash.validate_strict({}, false) }.to raise_error(/hash/i)
+      expect{ ClassyHash.validate_strict(false, {}) }.to raise_error(/not a Hash/)
+      expect{ ClassyHash.validate_strict({}, false) }.to raise_error(/not a.*constraint/)
     end
 
     context 'schema is empty' do

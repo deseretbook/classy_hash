@@ -36,9 +36,9 @@ module ClassyHash
   #           in error messages (e.g. :key1[:key2][0]).
   #   :key - Used internally for tracking the current validation key in error
   #           messages (e.g. :key1 or 0).
-  #   :errors - Used internally for aggregating error messages.
+  #   :errors - Used internally for aggregating error messages.  TODO: implement
   def self.validate_new(value, constraint, strict: false, full: false, verbose: false,
-                        raise_errors: true, parent_path: nil, key: nil, errors: nil)
+                        raise_errors: true, parent_path: nil, key: NO_VALUE, errors: nil)
     case constraint
     when Class
       # Constrain value to be a specific class
@@ -54,10 +54,13 @@ module ClassyHash
       # Recursively check nested Hashes
       self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Hash)
 
+      parent_path = join_path(parent_path, key)
+
       if strict
         extra_keys = value.keys - constraint.keys
         if extra_keys.any?
           # TODO: faster generation of verbose error message (join is faster than inspect+delete)
+          # TODO: include path in error message for deep strictness
           members = "(#{extra_keys.inspect.delete('[]')})" if verbose
           raise "Hash contains members #{members} not specified in schema".squeeze(' ')
         end
@@ -74,8 +77,8 @@ module ClassyHash
             full: full,
             verbose: verbose,
             raise_errors: raise_errors,
-            parent_path: join_path(parent_path, k),
-            key: nil,
+            parent_path: parent_path,
+            key: k,
             errors: errors
           )
         elsif !(c.is_a?(Array) && c.include?(:optional))
@@ -321,9 +324,13 @@ module ClassyHash
   end
 
   def self.join_path(parent_path, key)
-    puts "\n\n\nJoining parent #{parent_path.inspect} to key #{key.inspect} at\n\t#{caller(1, 3).join("\n\t")}\n\n\n" # XXX
-
-    parent_path ? "#{parent_path}[#{key.inspect}]" : key.inspect
+    if parent_path
+      "#{parent_path}[#{key.inspect}]"
+    elsif key == NO_VALUE
+      nil
+    else
+      key.inspect
+    end
   end
 
   # Raises an error indicating that the given +key+ under the given
@@ -331,7 +338,7 @@ module ClassyHash
   def self.raise_error(parent_path, key, constraint, value)
     # TODO: Ability to validate all keys
     message = constraint.is_a?(String) ? constraint : constraint_string(constraint, value)
-    raise "#{self.join_path(parent_path, key)} is not #{message}"
+    raise "#{self.join_path(parent_path, key) || 'Top level'} is not #{message}"
   end
 end
 
