@@ -2,12 +2,10 @@ language: ruby
 sudo: false
 env:
   - 'JRUBY_OPTS=--debug'
-before_install:
-  - rvm get stable
 rvm:
   - '2.0'
   - '2.1'
   - '2.2'
   - '2.3.1'
-  - 'jruby-9'
+  - 'jruby-9.0.5'
 script: bundle exec rspec
