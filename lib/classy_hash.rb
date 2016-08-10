@@ -2,6 +2,7 @@
 # Created May 2014 by Mike Bourgeous, DeseretBook.com
 # Copyright (C)2016 Deseret Book and Contributors (see git history)
 # See LICENSE and README.md for details.
+# frozen_string_literal: true
 
 require 'set'
 require 'securerandom'
