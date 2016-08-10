@@ -801,7 +801,7 @@ describe ClassyHash do
           end
 
           it "rejects good hash #{idx} with extra members" do
-            expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(/contains members/)
+            expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(/Top level.*contains members/)
           end
 
           it "includes unexpected hash #{idx} keys in error message if verbose is set" do
@@ -831,7 +831,7 @@ describe ClassyHash do
       end
 
       it 'rejects hash' do
-        expect{ ClassyHash.deep_validate_strict(hash, schema) }.to raise_error(/contains members/)
+        expect{ ClassyHash.validate_strict(hash, schema) }.to raise_error(/:nested .*contains members/)
       end
     end
 
@@ -845,7 +845,7 @@ describe ClassyHash do
       end
 
       it 'rejects hash' do
-        expect{ ClassyHash.deep_validate_strict(hash, schema) }.to raise_error(/contains members/)
+        expect{ ClassyHash.validate_strict(hash, schema) }.to raise_error(/:collection\[0\] .*contains members/)
       end
     end
   end

@@ -54,17 +54,20 @@ module ClassyHash
       # Recursively check nested Hashes
       self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Hash)
 
-      parent_path = join_path(parent_path, key)
-
       if strict
         extra_keys = value.keys - constraint.keys
         if extra_keys.any?
-          # TODO: faster generation of verbose error message (join is faster than inspect+delete)
-          # TODO: include path in error message for deep strictness
-          members = "(#{extra_keys.inspect.delete('[]')})" if verbose
-          raise "Hash contains members #{members} not specified in schema".squeeze(' ')
+          if verbose
+            msg = "valid: contains members #{extra_keys.map(&:inspect).join(', ')} not specified in schema"
+          else
+            msg = 'valid: contains members not specified in schema'
+          end
+
+          raise_error(parent_path, key, msg, NO_VALUE)
         end
       end
+
+      parent_path = join_path(parent_path, key)
 
       constraint.each do |k, c|
         if value.include?(k)
