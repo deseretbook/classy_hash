@@ -209,8 +209,8 @@ module ClassyHash
 
   # Raises an error unless the given +value+ matches one of the given multiple
   # choice +constraints+.  Other parameters are used for internal state.
-  def self.check_multi(value, constraints, strict:, full:, verbose:, raise_errors:,
-                       parent_path:, key:, errors:)
+  def self.check_multi(value, constraints, strict: nil, full: nil, verbose: nil, raise_errors: nil,
+                       parent_path: nil, key: nil, errors: nil)
     if constraints.length == 0
       self.raise_error(
         parent_path,
