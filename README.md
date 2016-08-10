@@ -91,9 +91,16 @@ hash = {
 ClassyHash.validate(hash, schema) # Throws ":key2 is not a/an Integer"
 ```
 
-The `validate` and `validate_strict` methods will raise an exception if
-validation fails.  Validation proceeds until the first invalid value is found,
-then an error is thrown for that value.  Later values are not checked.
+The `validate` method will raise an exception if validation fails.  Validation
+proceeds until the first invalid value is found, then an error is thrown for
+that value.  Later values are not checked.
+
+You can pass `strict: true` as a keyword argument to `validate` to raise an
+error if the input hash contains any members not specified in the schema.
+Passing `verbose: true` will include the names of the unexpected hash keys in
+the generated error message (a potential security risk in some settings).  See
+the inline documentation in the source code for more details.  As of version
+0.2.0, all nested schemas will also be checked for unexpected members.
 
 
 #### Multiple choice
@@ -507,10 +514,10 @@ data = <<JSON
 }
 JSON
 
-# ClassyHash#validate_strict raises an error if the Hash contains any keys not
-# specified by the schema.
-ClassyHash.validate_strict({ :extra_key => 0 }, user_schema) # Throws "Hash contains members not specified in schema"
-ClassyHash.validate_strict(JSON.parse(data, symbolize_names: true), user_schema) # Throws ":addresses[1][:city] is not a/an String
+# ClassyHash#validate(..., strict: true) raises an error if the Hash contains
+# any keys not specified by the schema.
+ClassyHash.validate({ :extra_key => 0 }, user_schema, strict: true) # Throws "Top level contains members not specified in schema"
+ClassyHash.validate(JSON.parse(data, symbolize_names: true), user_schema, strict: true) # Throws ":addresses[1][:city] is not a/an String
 ```
 
 ### Testing
