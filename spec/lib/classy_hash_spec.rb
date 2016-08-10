@@ -831,7 +831,8 @@ describe ClassyHash do
       end
 
       it 'rejects hash' do
-        expect{ ClassyHash.validate_strict(hash, schema) }.to raise_error(/:nested .*contains members/)
+        expect{ ClassyHash.validate(hash, schema, strict: true) }.to raise_error(/:nested .*contains members not/)
+        expect{ ClassyHash.validate(hash, schema, strict: true, verbose: true) }.to raise_error(/:nested .*contains members :wutang not/)
       end
     end
 
@@ -845,7 +846,8 @@ describe ClassyHash do
       end
 
       it 'rejects hash' do
-        expect{ ClassyHash.validate_strict(hash, schema) }.to raise_error(/:collection\[0\] .*contains members/)
+        expect{ ClassyHash.validate(hash, schema, strict: true) }.to raise_error(/:collection\[0\] .*contains members not/)
+        expect{ ClassyHash.validate(hash, schema, strict: true, verbose: true) }.to raise_error(/:collection\[0\] .*contains members :wutang not/)
       end
     end
   end
