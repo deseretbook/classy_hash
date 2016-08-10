@@ -702,8 +702,8 @@ describe ClassyHash do
     end
 
     it 'rejects non-hashes' do
-      expect{ ClassyHash.validate(false, {}) }.to raise_error(/hash/i)
-      expect{ ClassyHash.validate({}, false) }.to raise_error(/hash/i)
+      expect{ ClassyHash.validate(false, {}) }.to raise_error(/not a Hash/)
+      expect{ ClassyHash.validate({}, false) }.to raise_error(/not a.*constraint/)
     end
 
     it 'rejects invalid schema elements' do
@@ -739,6 +739,12 @@ describe ClassyHash do
       expect{ ClassyHash.validate({a: {}}, {a: :optional}) }.not_to raise_error
     end
 
+    it 'allows nil to be used as a key' do
+      expect{ ClassyHash.validate({nil => 3}, {nil => Integer}) }.not_to raise_error
+      expect{ ClassyHash.validate({nil => 3}, {nil => String}) }.to raise_error(/nil .*String/)
+      expect{ ClassyHash.validate({nil => {nil => 3}}, {nil => {nil => String}}) }.to raise_error(/nil\[nil\] .*String/)
+    end
+
     context 'schema is empty' do
       it 'accepts all hashes' do
         expect{ ClassyHash.validate({}, {}) }.not_to raise_error
@@ -751,8 +757,8 @@ describe ClassyHash do
 
   describe '.validate_strict' do
     it 'rejects non-hashes' do
-      expect{ ClassyHash.validate_strict(false, {}) }.to raise_error(/hash/i)
-      expect{ ClassyHash.validate_strict({}, false) }.to raise_error(/hash/i)
+      expect{ ClassyHash.validate_strict(false, {}) }.to raise_error(/not a Hash/)
+      expect{ ClassyHash.validate_strict({}, false) }.to raise_error(/not a.*constraint/)
     end
 
     context 'schema is empty' do
@@ -795,7 +801,7 @@ describe ClassyHash do
           end
 
           it "rejects good hash #{idx} with extra members" do
-            expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(/contains members/)
+            expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(/Top level.*contains members/)
           end
 
           it "includes unexpected hash #{idx} keys in error message if verbose is set" do
@@ -810,6 +816,38 @@ describe ClassyHash do
             expect{ ClassyHash.validate_strict(info[1], d[:schema]) }.to raise_error(info[0])
           end
         end
+      end
+    end
+  end
+
+  describe 'deep strict validation' do
+    context 'when nested hash contains unexpected members' do
+      let(:schema) do
+        { nested: { id: Integer } }
+      end
+
+      let(:hash) do
+        { nested: { id: 1, wutang: false } }
+      end
+
+      it 'rejects hash' do
+        expect{ ClassyHash.validate(hash, schema, strict: true) }.to raise_error(/:nested .*contains members not/)
+        expect{ ClassyHash.validate(hash, schema, strict: true, verbose: true) }.to raise_error(/:nested .*contains members :wutang not/)
+      end
+    end
+
+    context 'when elements of child array contains unexpected members' do
+      let(:schema) do
+        { collection: [[{ id: Integer }]] }
+      end
+
+      let(:hash) do
+        { collection: [{ id: 1, wutang: false }] }
+      end
+
+      it 'rejects hash' do
+        expect{ ClassyHash.validate(hash, schema, strict: true) }.to raise_error(/:collection\[0\] .*contains members not/)
+        expect{ ClassyHash.validate(hash, schema, strict: true, verbose: true) }.to raise_error(/:collection\[0\] .*contains members :wutang not/)
       end
     end
   end
