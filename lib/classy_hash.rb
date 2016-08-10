@@ -15,17 +15,16 @@ module ClassyHash
   # no-value symbol.
   NO_VALUE = "__ch_no_value_#{SecureRandom.hex(10)}".to_sym
 
-  # New WIP implementation of validation with better internal state tracking
-  # allowing error accumulation.
+  # Validates a +value+ against a ClassyHash +constraint+.  Typically +value+
+  # is a Hash and +constraint+ is a ClassyHash schema.
   #
-  # TODO: document
-  #
-  # Parameters
+  # Parameters:
   #   value - The Hash or other value to validate.
   #   constraint - The schema or single constraint against which to validate.
   #   :strict - If true, rejects Hashes with members not in the schema.
+  #           Applies to the top level and to nested Hashes.
   #   :full - If true, gathers all invalid values.  If false, stops checking at
-  #           the first invalid value.
+  #           the first invalid value.  TODO: implement
   #   :verbose - If true, the error message for failed strictness will include
   #           the names of the unexpected keys.  Note that this can be a
   #           security risk if the key names are controlled by an attacker and
@@ -37,8 +36,12 @@ module ClassyHash
   #   :key - Used internally for tracking the current validation key in error
   #           messages (e.g. :key1 or 0).
   #   :errors - Used internally for aggregating error messages.  TODO: implement
-  def self.validate_new(value, constraint, strict: false, full: false, verbose: false,
-                        raise_errors: true, parent_path: nil, key: NO_VALUE, errors: nil)
+  #
+  # Examples:
+  #   ClassyHash.validate({a: 1}, {a: Integer})
+  #   ClassyHash.validate(1, Integer)
+  def self.validate(value, constraint, strict: false, full: false, verbose: false,
+                    raise_errors: true, parent_path: nil, key: NO_VALUE, errors: nil)
     case constraint
     when Class
       # Constrain value to be a specific class
@@ -73,7 +76,7 @@ module ClassyHash
         if value.include?(k)
           # TODO: Benchmark how much slower allocating a state object is than
           # passing lots of parameters?
-          self.validate_new(
+          self.validate(
             value[k],
             c,
             strict: strict,
@@ -162,7 +165,7 @@ module ClassyHash
         # TODO: don't use exceptions internally; they are slow
         negfail = false
         begin
-          self.validate_new(
+          self.validate(
             value,
             c,
             strict: strict,
@@ -197,25 +200,11 @@ module ClassyHash
     nil
   end
 
-  # Validates a +hash+ against a +schema+.  The +parent_path+ parameter is used
-  # internally to generate error messages.
-  def self.validate(hash, schema, parent_path=nil, verbose=false, strict=false)
-    raise 'Must validate a Hash' unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
-    raise 'Schema must be a Hash' unless schema.is_a?(Hash) # TODO: Allow individual element validations?
-
-    validate_new(hash, schema, parent_path: parent_path, verbose: verbose, strict: strict)
-  end
-
-  # As with #validate, but members not specified in the +schema+ are forbidden.
-  # Only the top-level schema is strictly validated.  If +verbose+ is true, the
-  # names of unexpected keys will be included in the error message.
+  # Deprecated.  Retained for compatibility with v0.1.x.  Calls .validate with
+  # :strict set to true.  If +verbose+ is true, the names of unexpected keys
+  # will be included in the error message.
   def self.validate_strict(hash, schema, verbose=false, parent_path=nil)
-    validate_new(hash, schema, parent_path: parent_path, verbose: verbose, strict: true)
-  end
-
-  # As with #validate_strict, but deep members not specified in the +schema+ are forbidden.
-  def self.deep_validate_strict(hash, schema, verbose=false, parent_path=nil)
-    validate_new(hash, schema, parent_path: parent_path, verbose: verbose, strict: true)
+    validate(hash, schema, parent_path: parent_path, verbose: verbose, strict: true)
   end
 
   # Raises an error unless the given +value+ matches one of the given multiple
@@ -239,7 +228,7 @@ module ClassyHash
       next if c == :optional
 
       begin
-        self.validate_new(
+        self.validate(
           value,
           c,
           strict: strict,

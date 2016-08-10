@@ -702,8 +702,8 @@ describe ClassyHash do
     end
 
     it 'rejects non-hashes' do
-      expect{ ClassyHash.validate(false, {}) }.to raise_error(/hash/i)
-      expect{ ClassyHash.validate({}, false) }.to raise_error(/hash/i)
+      expect{ ClassyHash.validate(false, {}) }.to raise_error(/not a Hash/)
+      expect{ ClassyHash.validate({}, false) }.to raise_error(/not a.*constraint/)
     end
 
     it 'rejects invalid schema elements' do
