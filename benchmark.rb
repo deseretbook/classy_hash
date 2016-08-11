@@ -242,13 +242,13 @@ VALIDATORS = {
   classy_hash_full: {
     divisor: 1,
     validator: lambda{|hash|
-      ClassyHash.validate_full(hash, classy_schema)
+      ClassyHash.validate(hash, classy_schema, full: true)
     }
   },
   classy_hash_full_strict: {
     divisor: 1,
     validator: lambda{|hash|
-      ClassyHash.validate_full(hash, classy_schema, true)
+      ClassyHash.validate(hash, classy_schema, strict: true, full: true)
     }
   },
 
