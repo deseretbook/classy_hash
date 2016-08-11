@@ -248,7 +248,7 @@ module ClassyHash
             strict: strict,
             full: full,
             verbose: verbose,
-            raise_errors: raise_errors,
+            raise_errors: true,
             parent_path: parent_path,
             key: key,
             errors: errors
