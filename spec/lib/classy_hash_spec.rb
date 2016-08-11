@@ -500,6 +500,45 @@ describe ClassyHash do
             ]
           }
         ],
+        [
+          /^:k9\[:opt4\].*Array/,
+          {
+            k1: 'V1',
+            k2: 'V2',
+            k3: -3,
+            k4: 4.4,
+            k5: true,
+            k6: false,
+            k7: {
+              n1: 'Hi there',
+              n2: 'This is a nested hash',
+              n3: {
+                d1: 0.35
+              }
+            },
+            k8: 'some ints would normally be here',
+            k9: {
+              opt1: "opt1",
+              opt2: [1, 2, 3],
+              opt3: [
+                {a: -5},
+                {a: nil},
+                'str3'
+              ],
+              opt4: :not_an_array,
+            },
+            k10: -3,
+            k11: [
+              3,
+              4,
+              5,
+              nil,
+              true,
+              false,
+              1<<150
+            ]
+          },
+        ],
       ]
     }
   ]

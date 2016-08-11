@@ -120,8 +120,10 @@ module ClassyHash
 
     when Hash
       # Recursively check nested Hashes
-      self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Hash)
-      return unless value.is_a?(Hash) # FIXME: for validate_full; replace with another mechanism
+      unless value.is_a?(Hash)
+        self.raise_error(parent_path, key, constraint, value)
+        return # FIXME: for validate_full; replace with another mechanism
+      end
 
       if strict
         extra_keys = value.keys - constraint.keys
@@ -162,7 +164,10 @@ module ClassyHash
       # Multiple choice or array validation
       if constraint.length == 1 && constraint.first.is_a?(Array)
         # Array validation
-        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Array)
+        unless value.is_a?(Array)
+          self.raise_error(parent_path, key, constraint, value)
+          return # FIXME: for validate_full
+        end
 
         constraints = constraint.first
         value.each_with_index do |v, idx|
@@ -209,11 +214,17 @@ module ClassyHash
     when Range
       # Range (with type checking for common classes)
       if constraint.min.is_a?(Integer) && constraint.max.is_a?(Integer)
-        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Integer)
+        unless value.is_a?(Integer)
+          self.raise_error(parent_path, key, constraint, value)
+        end
       elsif constraint.min.is_a?(Numeric)
-        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Numeric)
+        unless value.is_a?(Numeric)
+          self.raise_error(parent_path, key, constraint, value)
+        end
       elsif constraint.min.is_a?(String)
-        self.raise_error(parent_path, key, constraint, value) unless value.is_a?(String)
+        unless value.is_a?(String)
+          self.raise_error(parent_path, key, constraint, value)
+        end
       end
 
       unless constraint.cover?(value)
