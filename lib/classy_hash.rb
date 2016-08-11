@@ -78,6 +78,35 @@ module ClassyHash
   #   ClassyHash.validate(1, Integer)
   def self.validate(value, constraint, strict: false, full: false, verbose: false,
                     raise_errors: true, parent_path: nil, key: NO_VALUE, errors: nil)
+    if full
+      error_entries = []
+
+      begin
+        validate(
+          value,
+          constraint,
+          strict: strict,
+          full: false,
+          verbose: verbose,
+          raise_errors: true,
+          parent_path: parent_path,
+          key: key,
+          errors: errors
+        )
+      rescue SchemaViolationError => error
+        error_entries.concat error.entries
+        error.continue
+      end
+
+      if block_given?
+        error_entries.each do |e| yield e end
+      elsif !error_entries.empty?
+        raise SchemaViolationError.new(error_entries)
+      end
+
+      return
+    end
+
     case constraint
     when Class
       # Constrain value to be a specific class
@@ -92,6 +121,7 @@ module ClassyHash
     when Hash
       # Recursively check nested Hashes
       self.raise_error(parent_path, key, constraint, value) unless value.is_a?(Hash)
+      return unless value.is_a?(Hash) # FIXME: for validate_full; replace with another mechanism
 
       if strict
         extra_keys = value.keys - constraint.keys
@@ -241,27 +271,6 @@ module ClassyHash
   # will be included in the error message.
   def self.validate_strict(hash, schema, verbose=false, parent_path=nil)
     validate(hash, schema, parent_path: parent_path, verbose: verbose, strict: true)
-  end
-
-  # Similar to #validate (or #validate_strict if +strict+ is true), but
-  # collects *all* schema violation errors.
-  def self.validate_full(hash, schema, strict = false, &block)
-    error_entries = []
-
-    begin
-      strict ? validate_strict(hash, schema) : validate(hash, schema)
-    rescue SchemaViolationError => error
-      error_entries.concat error.entries
-      error.continue
-    end
-
-    if block_given?
-      error_entries.each(&block)
-    elsif !error_entries.empty?
-      raise SchemaViolationError.new(error_entries)
-    end
-
-    nil
   end
 
   # Raises an error unless the given +value+ matches one of the given multiple

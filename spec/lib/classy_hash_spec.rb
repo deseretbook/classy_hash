@@ -771,11 +771,11 @@ describe ClassyHash do
     end
   end
 
-  describe '.validate_full' do
+  describe 'validate(full: true)' do
     it 'collects all errors' do
       schema = {a: String, b: { c: String }}
-      expect{ ClassyHash.validate_full({a: 1, b: {} }, schema) }.to raise_error(%r{:a is not a\/an String, :b\[:c\] is not present})
-      expect{ ClassyHash.validate_full({a: 'hey', b: { c: 'hello' }}, schema) }.not_to raise_error
+      expect{ ClassyHash.validate({a: 1, b: {} }, schema, full: true) }.to raise_error(%r{:a is not a\/an String, :b\[:c\] is not present})
+      expect{ ClassyHash.validate({a: 'hey', b: { c: 'hello' }}, schema, full: true) }.not_to raise_error
     end
 
     it 'accepts a block for application level validation error handling' do
@@ -783,7 +783,7 @@ describe ClassyHash do
 
       # The actual SchemaValidationError is suppressed, since passing a block
       # implies that you want to do something else with validation errors.
-      ClassyHash.validate_full({a: 1, b: {} }, {a: String, b: { c: String }}) do |error_entry|
+      ClassyHash.validate({a: 1, b: {} }, {a: String, b: { c: String }}, full: true) do |error_entry|
         entries << error_entry
       end
 
@@ -816,7 +816,7 @@ describe ClassyHash do
       end
     end
 
-    describe '.validate_strict' do
+    describe '.validate(strict: true)' do
       context "schema is #{d[:name]}" do
         d[:good].each_with_index do |h, idx|
           it "accepts good hash #{idx}" do
@@ -842,29 +842,29 @@ describe ClassyHash do
       end
     end
 
-    describe '.validate_full' do
+    describe '.validate(full: true)' do
       context "schema is #{d[:name]}" do
         d[:good].each_with_index do |h, idx|
           it "accepts good hash #{idx}" do
-            expect{ ClassyHash.validate_full(h, d[:schema]) }.not_to raise_error
+            expect{ ClassyHash.validate(h, d[:schema], full: true) }.not_to raise_error
           end
 
           context 'strict parameter is false' do
             it "accepts good hash #{idx} with extra members" do
-              expect{ ClassyHash.validate_full(h.merge({k999: 'a', k000: :b}), d[:schema], false) }.not_to raise_error
+              expect{ ClassyHash.validate(h.merge({k999: 'a', k000: :b}), d[:schema], strict: false, full: true) }.not_to raise_error
             end
           end
 
           context 'strict parameter is true' do
-            it "accepts good hash #{idx} with extra members" do
-              expect{ ClassyHash.validate_full(h.merge({k999: 'a', k000: :b}), d[:schema], true) }.to raise_error
+            it "rejects good hash #{idx} with extra members" do
+              expect{ ClassyHash.validate(h.merge({k999: 'a', k000: :b}), d[:schema], strict: true, full: true) }.to raise_error
             end
           end
         end
 
         d[:bad].each_with_index do |info, idx|
           it "rejects bad hash #{idx}" do
-            expect{ ClassyHash.validate(info[1], d[:schema]) }.to raise_error(info[0])
+            expect{ ClassyHash.validate(info[1], d[:schema], full: true) }.to raise_error(info[0])
           end
         end
       end
