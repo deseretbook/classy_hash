@@ -323,7 +323,7 @@ def gc_bench
   ac = after[:count]
   elapsed = Time.now - start
 
-  { alloc: aa - ba, count: ac - bc, elapsed: elapsed }
+  { alloc: aa - ba, gc: ac - bc, elapsed: elapsed }
 end
 
 # Runs the given block BENCHCOUNT times for each serializer/schema pair.
@@ -359,12 +359,12 @@ def do_test(hashes, expect_fail)
         end
 
         total = count * hashes.count
-        speed = (total / result[:elapsed]).round
+        speed = total.to_f / result[:elapsed]
 
-        puts "\t\tResult: #{total} in #{result[:elapsed]}s (#{speed}/s #{result[:alloc]} allocations #{result[:count]} GC runs)"
+        puts "\t\tResult: #{total} in #{result[:elapsed]}s (#{speed}/s #{result[:alloc]} allocations #{result[:gc]} GC runs)"
         puts "\t\tReturned: #{response}" if response
 
-        results << [ser_name, val_name, speed, result[:alloc], result[:count]]
+        results << [ser_name, val_name, total, speed, result[:alloc].to_f / total, total.to_f / result[:gc]]
       rescue => e
         puts "\t\tException raised: #{e}\n\t\t#{e.backtrace.first(15).join("\n\t\t")}"
       end
@@ -375,11 +375,12 @@ def do_test(hashes, expect_fail)
 end
 
 def show_results(results)
-  puts " #{'Serializer'.center(20)} | #{'Validator'.center(20)} | #{'Ops/sec'.center(10)} | #{'Alloc'.center(10)} | #{'GC runs'.center(10)}"
-  puts "-#{'-' * 20}-+-#{'-' * 20}-+-#{'-' * 10}-+-#{'-' * 10}-+-#{'-' * 10}"
+  puts " #{'Serializer'.center(15)} | #{'Validator'.center(24)} | #{'Ops'.center(8)} | #{'Ops/sec'.center(10)} | #{'Alloc/op'.center(10)} | #{'Ops/GC'.center(10)}"
+  puts "-#{'-' * 15}-+-#{'-' * 24}-+-#{'-' * 8}-+-#{'-' * 10}-+-#{'-' * 10}-+-#{'-' * 10}"
 
-  results.sort_by{|r| -r[2]}.each do |serializer, validator, speed, alloc, gc_count|
-    puts " #{serializer.to_s.ljust(20)} | #{validator.to_s.ljust(20)} | #{speed.to_s.rjust(10)} | #{alloc.to_s.rjust(10)} | #{gc_count.to_s.rjust(10)}"
+  results.sort_by{|r| -r[2]}.each do |serializer, validator, total, speed, alloc, gc_count|
+    puts " #{serializer.to_s.ljust(15)} | #{validator.to_s.ljust(24)} | #{total.to_s.rjust(8)} | " \
+      "#{('%.1f' % speed).rjust(10)} | #{('%.1f' % alloc).rjust(10)} | #{('%.1f' % gc_count).rjust(10)}"
   end
 
   puts
