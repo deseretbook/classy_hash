@@ -6,7 +6,6 @@
 
 require 'set'
 require 'securerandom'
-require 'continuation'
 
 # This module contains the ClassyHash methods for making sure Ruby Hash objects
 # match a given schema.  ClassyHash runs fast by taking advantage of Ruby
@@ -17,33 +16,23 @@ module ClassyHash
   class SchemaViolationError < StandardError
     # The list of errors passed to the constructor.  Contains an Array of Hashes:
     #   [
-    #     { full_path: ClassyHash.join_path(parent_path, key), message: message },
+    #     { full_path: ClassyHash.join_path(parent_path, key), message: "something the full_path was supposed to be" },
     #     ...
     #   ]
     attr_reader :entries
 
     # Initializes a schema violation error with the given list of schema
-    # +errors+ and a continuation (+cont+) for resuming execution.
-    def initialize(errors = [], cont = nil)
-      @entries, @cont = errors, cont
-    end
-
-    # Resumes execution using the continuation passed to the constructor.
-    def continue
-      @cont.call
+    # +errors+.
+    def initialize(errors = [])
+      @entries = errors
     end
 
     # Joins all errors passed to the constructor into a comma-separated String.
-    def full_message
-      @entries.each_with_object [] do |entry, list|
-        if entry[:full_path]
-          list << "#{entry[:full_path]} is not #{entry[:message]}"
-        else
-          list << entry[:message]
-        end
-      end.join(', ')
+    def to_s
+      @msg ||= @entries.map{|e|
+        "#{e[:full_path]} is not #{e[:message]}"
+      }.join(', ')
     end
-    alias_method :to_s, :full_message
   end
 
   # Internal symbol representing the absence of a value for error message
@@ -54,30 +43,37 @@ module ClassyHash
   # Validates a +value+ against a ClassyHash +constraint+.  Typically +value+
   # is a Hash and +constraint+ is a ClassyHash schema.
   #
+  # Returns false if validation fails and errors were not raised.
+  #
   # Parameters:
   #   value - The Hash or other value to validate.
   #   constraint - The schema or single constraint against which to validate.
   #   :strict - If true, rejects Hashes with members not in the schema.
   #           Applies to the top level and to nested Hashes.
   #   :full - If true, gathers all invalid values.  If false, stops checking at
-  #           the first invalid value.  TODO: implement
+  #           the first invalid value.
   #   :verbose - If true, the error message for failed strictness will include
   #           the names of the unexpected keys.  Note that this can be a
   #           security risk if the key names are controlled by an attacker and
   #           the result is sent via HTTPS (see e.g. the CRIME attack).
   #   :raise_errors - If true, any errors will be raised.  If false, they will
-  #           be returned as a String.  Default is true.  TODO: implement
+  #           be returned as a String.  Default is true.
+  #   :errors - Used internally for aggregating error messages.  You can also
+  #           pass in an Array here to collect any errors (useful if
+  #           raise_errors is false).
   #   :parent_path - Used internally for tracking the current validation path
   #           in error messages (e.g. :key1[:key2][0]).
   #   :key - Used internally for tracking the current validation key in error
   #           messages (e.g. :key1 or 0).
-  #   :errors - Used internally for aggregating error messages.  TODO: implement
   #
   # Examples:
   #   ClassyHash.validate({a: 1}, {a: Integer})
   #   ClassyHash.validate(1, Integer)
   def self.validate(value, constraint, strict: false, full: false, verbose: false,
-                    raise_errors: true, parent_path: nil, key: NO_VALUE, errors: nil)
+                    raise_errors: true, errors: nil, parent_path: nil, key: NO_VALUE)
+    errors = [] if errors.nil? && (full || !raise_errors)
+    raise_below = raise_errors && !full
+
     if full
       error_entries = []
 
@@ -88,7 +84,7 @@ module ClassyHash
           strict: strict,
           full: false,
           verbose: verbose,
-          raise_errors: true,
+          raise_errors: raise_below,
           parent_path: parent_path,
           key: key,
           errors: errors
@@ -112,17 +108,16 @@ module ClassyHash
       # Constrain value to be a specific class
       if constraint == TrueClass || constraint == FalseClass
         unless value == true || value == false
-          self.raise_error(parent_path, key, constraint, value)
+          return add_error(raise_below, errors, parent_path, key, constraint, value)
         end
       elsif !value.is_a?(constraint)
-        self.raise_error(parent_path, key, constraint, value)
+        return add_error(raise_below, errors, parent_path, key, constraint, value)
       end
 
     when Hash
       # Recursively check nested Hashes
       unless value.is_a?(Hash)
-        self.raise_error(parent_path, key, constraint, value)
-        return # FIXME: for validate_full; replace with another mechanism
+        return add_error(raise_below, errors, parent_path, key, constraint, value)
       end
 
       if strict
@@ -134,7 +129,7 @@ module ClassyHash
             msg = 'valid: contains members not specified in schema'
           end
 
-          raise_error(parent_path, key, msg, NO_VALUE)
+          return add_error(raise_below, errors, parent_path, key, msg, NO_VALUE)
         end
       end
 
@@ -150,13 +145,13 @@ module ClassyHash
             strict: strict,
             full: full,
             verbose: verbose,
-            raise_errors: raise_errors,
+            raise_errors: raise_below,
             parent_path: parent_path,
             key: k,
             errors: errors
           )
         elsif !(c.is_a?(Array) && c.include?(:optional))
-          self.raise_error(parent_path, k, "present", NO_VALUE)
+          return add_error(raise_below, errors, parent_path, k, "present", NO_VALUE)
         end
       end
 
@@ -165,27 +160,27 @@ module ClassyHash
       if constraint.length == 1 && constraint.first.is_a?(Array)
         # Array validation
         unless value.is_a?(Array)
-          self.raise_error(parent_path, key, constraint, value)
-          return # FIXME: for validate_full
+          return add_error(raise_below, errors, parent_path, key, constraint, value)
         end
 
         constraints = constraint.first
         value.each_with_index do |v, idx|
-          self.check_multi(
+          ret = self.check_multi(
             v,
             constraints,
             strict: strict,
             full: full,
             verbose: verbose,
-            raise_errors: raise_errors,
+            raise_errors: raise_errors && !full,
             parent_path: join_path(parent_path, key),
             key: idx,
             errors: errors
           )
+          return ret if !ret && !full
         end
       else
         # Multiple choice
-        self.check_multi(
+        ret = self.check_multi(
           value,
           constraint,
           strict: strict,
@@ -196,45 +191,46 @@ module ClassyHash
           key: key,
           errors: errors
         )
+        return ret if !ret && !full
       end
 
     when Regexp
       # Constrain value to be a String matching a Regexp
       unless value.is_a?(String) && value =~ constraint
-        self.raise_error(parent_path, key, constraint, value)
+        return add_error(raise_below, errors, parent_path, key, constraint, value)
       end
 
     when Proc
       # User-specified validator
       result = constraint.call(value)
       if result != true
-        self.raise_error(parent_path, key, constraint, value)
+        return add_error(raise_below, errors, parent_path, key, constraint, value)
       end
 
     when Range
       # Range (with type checking for common classes)
       if constraint.min.is_a?(Integer) && constraint.max.is_a?(Integer)
         unless value.is_a?(Integer)
-          self.raise_error(parent_path, key, constraint, value)
+          return add_error(raise_below, errors, parent_path, key, constraint, value)
         end
       elsif constraint.min.is_a?(Numeric)
         unless value.is_a?(Numeric)
-          self.raise_error(parent_path, key, constraint, value)
+          return add_error(raise_below, errors, parent_path, key, constraint, value)
         end
       elsif constraint.min.is_a?(String)
         unless value.is_a?(String)
-          self.raise_error(parent_path, key, constraint, value)
+          return add_error(raise_below, errors, parent_path, key, constraint, value)
         end
       end
 
       unless constraint.cover?(value)
-        self.raise_error(parent_path, key, constraint, value)
+        return add_error(raise_below, errors, parent_path, key, constraint, value)
       end
 
     when Set
       # Set/enumeration
       unless constraint.include?(value)
-        self.raise_error(parent_path, key, constraint, value)
+        return add_error(raise_below, errors, parent_path, key, constraint, value)
       end
 
     when CH::G::Composite
@@ -256,25 +252,25 @@ module ClassyHash
 
           if constraint.negate
             negfail = true
-            self.raise_error(parent_path, key, constraint, value)
+            return add_error(raise_below, errors, parent_path, key, constraint, value)
           end
         rescue => e
           unless constraint.negate && !negfail
-            self.raise_error(parent_path, key, constraint, value)
+            return add_error(raise_below, errors, parent_path, key, constraint, value)
           end
         end
       end
 
     when :optional
       # Optional key marker in multiple choice validators
-      nil
+      true
 
     else
       # Unknown schema constraint
-      self.raise_error(parent_path, key, constraint, value)
+      return add_error(raise_below, errors, parent_path, key, constraint, value)
     end
 
-    nil
+    errors.nil? || errors.empty?
   end
 
   # Deprecated.  Retained for compatibility with v0.1.x.  Calls .validate with
@@ -289,7 +285,7 @@ module ClassyHash
   def self.check_multi(value, constraints, strict: nil, full: nil, verbose: nil, raise_errors: nil,
                        parent_path: nil, key: nil, errors: nil)
     if constraints.length == 0
-      self.raise_error(
+      return add_error(raise_errors, errors,
         parent_path,
         key,
         "a valid multiple choice constraint (array must not be empty)",
@@ -305,7 +301,7 @@ module ClassyHash
       next if c == :optional
 
       begin
-        self.validate(
+        return self.validate(
           value,
           c,
           strict: strict,
@@ -316,8 +312,6 @@ module ClassyHash
           key: key,
           errors: errors
         )
-
-        return
       rescue => e
         # Throw schema and array errors immediately
         # FIXME: is this appropriate for something like [:optional, {a: Integer}, {b: Integer}, [[{c: Integer}]]]
@@ -328,7 +322,7 @@ module ClassyHash
       end
     end
 
-    self.raise_error(parent_path, key, constraints, value)
+    return add_error(raise_errors, errors, parent_path, key, constraints, value)
   end
 
   # Generates a String describing the +value+'s failure to match the
@@ -392,6 +386,7 @@ module ClassyHash
     end
   end
 
+  # Joins parent_path and key for display in error messages.
   def self.join_path(parent_path, key)
     if parent_path
       "#{parent_path}[#{key.inspect}]"
@@ -402,18 +397,26 @@ module ClassyHash
     end
   end
 
-  # Raises an error indicating that the given +key+ under the given
-  # +parent_path+ fails because the value "is not #{+message+}"
+  # Raises or adds to +errors+ an error indicating that the given +key+ under
+  # the given +parent_path+ fails because the value is not valid.  If
+  # +constraint+ is a String, then it will be used as the error message.
+  # Otherwise
   #
-  # If parent_path and key are both nil, then the error message will just be
-  # the given +message+.
+  # If +raise_errors+ is true, raises an error immediately.  Otherwise adds an
+  # error to +errors+.
   #
-  # (TODO clarify -MB)
-  def self.raise_error(parent_path, key, constraint, value)
+  # See .constraint_string.
+  def self.add_error(raise_errors, errors, parent_path, key, constraint, value)
     message = constraint.is_a?(String) ? constraint : constraint_string(constraint, value)
-    callcc do |cont|
-      entry = { full_path: self.join_path(parent_path, key) || 'Top level', message: message }
-      raise SchemaViolationError.new([entry], cont)
+    entry = { full_path: self.join_path(parent_path, key) || 'Top level', message: message }
+
+    if raise_errors
+      errors ||= []
+      errors << entry
+      raise SchemaViolationError.new(errors)
+    else
+      errors << entry if errors
+      return false
     end
   end
 end
