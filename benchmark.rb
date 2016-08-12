@@ -268,7 +268,7 @@ VALIDATORS = {
   },
 
   hash_validator: {
-    divisor: 1,
+    divisor: 2,
     validator: lambda{|hash|
       validator = HashValidator.validate(hash, hash_validator_schema)
       raise validator.errors.to_s unless validator.valid?
@@ -276,7 +276,7 @@ VALIDATORS = {
   },
 
   schema_hash: {
-    divisor: 1,
+    divisor: 4,
     validator: lambda{|hash|
       hash.schema = schema_hash_schema
       raise 'hash invalid' unless hash.valid?
@@ -284,19 +284,19 @@ VALIDATORS = {
   },
 
   json_schema: {
-    divisor: 20,
+    divisor: 25,
     validator: lambda{|hash|
       JSON::Validator.validate!(json_schema_schema, hash)
     }
   },
   json_schema_strict: {
-    divisor: 20,
+    divisor: 25,
     validator: lambda{|hash|
       JSON::Validator.validate!(json_schema_schema, hash, strict: true)
     }
   },
   json_schema_full: {
-    divisor: 20,
+    divisor: 25,
     validator: lambda{|hash|
       a = JSON::Validator.fully_validate(json_schema_schema, hash, strict: true)
       raise a.join("\n\t\t\t") unless a.empty?
