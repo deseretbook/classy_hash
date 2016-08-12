@@ -13,23 +13,38 @@ require 'hash_validator'
 $: << File.join(File.dirname(__FILE__), 'lib')
 require 'classy_hash'
 
-good_hash = JSON.parse(<<-JSON, symbolize_names: true)
-{
-  "k1": "Value One",
-  "k2": "Value Two",
-  "k3": -3,
-  "k4": 4.4,
-  "k5": true,
-  "k6": false,
-  "k7": {
-    "n1": "Hi there",
-    "n2": "This is a nested hash",
-    "n3": {
-      "d1": 5
+good_hashes = [
+  {
+    k1: 'Value One',
+    k2: 'Value Two',
+    k3: -3,
+    k4: 4.4,
+    k5: true,
+    k6: false,
+    k7: {
+      n1: 'Hi there',
+      n2: 'This is a nested hash',
+      n3: {
+        d1: 5
+      }
     }
-  }
-}
-JSON
+  },
+  {
+    k1: 'Another Value One',
+    k2: 'Another Value Two',
+    k3: 3,
+    k4: -4,
+    k5: false,
+    k6: true,
+    k7: {
+      n1: 'Hello again',
+      n2: 'This is a second nested hash',
+      n3: {
+        d1: 31.5
+      }
+    }
+  },
+]
 
 bad_hashes = [
   {
@@ -313,7 +328,7 @@ end
 
 # Runs the given block BENCHCOUNT times for each serializer/schema pair.
 # Yields serializer name, serializer, validator name, validator
-def do_test
+def do_test(hashes, expect_fail)
   results = []
 
   SERIALIZERS.each do |ser_name, ser_info|
@@ -332,14 +347,21 @@ def do_test
 
         response = nil
         result = gc_bench do
-          count.times do
-            response = yield ser_name, serializer, val_name, validator
+          hashes.each do |h|
+            count.times do
+              response = validator.call(serializer.call(h)) rescue $!
+            end
+
+            if expect_fail != response.is_a?(StandardError)
+              raise "Validation should #{expect_fail ? '' : 'not '}have failed for #{h}"
+            end
           end
         end
 
-        speed = (count / result[:elapsed]).round
+        total = count * hashes.count
+        speed = (total / result[:elapsed]).round
 
-        puts "\t\tResult: #{count} in #{result[:elapsed]}s (#{speed}/s #{result[:alloc]} allocations #{result[:count]} GC runs)"
+        puts "\t\tResult: #{total} in #{result[:elapsed]}s (#{speed}/s #{result[:alloc]} allocations #{result[:count]} GC runs)"
         puts "\t\tReturned: #{response}" if response
 
         results << [ser_name, val_name, speed, result[:alloc], result[:count]]
@@ -365,27 +387,12 @@ end
 
 def run_tests(valid, invalid)
   puts " Testing valid hashes ".center(50, '-')
-  results = do_test do |ser_name, serializer, val_name, validator|
-    validator.call(serializer.call(valid))
-  end
-
+  results = do_test(valid, false)
   show_results(results)
 
   puts " Testing invalid hashes ".center(50, '-')
-  results = do_test do |ser_name, serializer, val_name, validator|
-    error = nil
-    invalid.each do |h|
-      begin
-        validator.call(serializer.call(h))
-      rescue => e
-        error = e
-      end
-      raise "Validation should have failed for #{h}" if error.nil?
-    end
-    error
-  end
-
+  results = do_test(invalid, true)
   show_results(results)
 end
 
-run_tests good_hash, bad_hashes
+run_tests good_hashes, bad_hashes
