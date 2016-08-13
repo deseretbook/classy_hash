@@ -647,7 +647,7 @@ describe ClassyHash do
     end
 
     it 'rejects invalid arrays with schemas' do
-      expect { ClassyHash.validate({a: [{c: 1}, {b: 2.1}, 5]}, {a: [[{b: Numeric}, Integer]]}) }.to raise_error(/present/)
+      expect { ClassyHash.validate({a: [{c: 1}, {b: 2.1}, 5]}, {a: [[{b: Numeric}, Integer]]}, full: true) }.to raise_error(/present/)
       expect { ClassyHash.validate({a: [{b: 1}, {b: 2.1}, 5.0]}, {a: [[{b: Numeric}, Integer]]}) }.to raise_error(/\[2\]/)
     end
 
