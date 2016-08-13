@@ -817,14 +817,11 @@ describe ClassyHash do
       expect{ ClassyHash.validate({a: 'hey', b: { c: 'hello' }}, schema, full: true) }.not_to raise_error
     end
 
-    it 'accepts a block for application level validation error handling' do
+    it 'can store errors in an external array for application handling' do
       entries = []
 
-      # The actual SchemaValidationError is suppressed, since passing a block
-      # implies that you want to do something else with validation errors.
-      ClassyHash.validate({a: 1, b: {} }, {a: String, b: { c: String }}, full: true) do |error_entry|
-        entries << error_entry
-      end
+      ClassyHash.validate({a: 1, b: {} }, {a: String, b: { c: String }},
+                          raise_errors: false, full: true, errors: entries)
 
       expect(entries).to eq [
         { full_path: ':a', message: 'a/an String' },
