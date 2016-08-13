@@ -284,7 +284,7 @@ describe ClassyHash do
           }
         ],
         [
-          /^:k9\[:opt2\].*one of/,
+          /^:k9.*\[:opt2\].*one of/,
           {
             k1: '1',
             k2: '2',
@@ -313,7 +313,7 @@ describe ClassyHash do
           }
         ],
         [
-          /^:k9\[:opt3\]\[2\]\[:a\].*one of/,
+          /^:k9.*\[:opt3\]\[2\]\[:a\].*one of/,
           {
             k1: '1',
             k2: '2',
@@ -372,7 +372,7 @@ describe ClassyHash do
           }
         ],
         [
-          /^:k9\[:opt4\]\[1\]\[3\]/,
+          /^:k9.*\[:opt4\]\[1\]\[3\]/,
           {
             k1: 'V1',
             k2: 'V2',
@@ -501,7 +501,7 @@ describe ClassyHash do
           }
         ],
         [
-          /^:k9\[:opt4\].*Array/,
+          /^:k9.*\[:opt4\].*Array/,
           {
             k1: 'V1',
             k2: 'V2',
