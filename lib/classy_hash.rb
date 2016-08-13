@@ -265,7 +265,9 @@ module ClassyHash
   end
 
   # Raises an error unless the given +value+ matches one of the given multiple
-  # choice +constraints+.  Other parameters are used for internal state.
+  # choice +constraints+.  Other parameters are used for internal state.  If
+  # +full+ is true, the error message for an invalid value will include the
+  # errors for all of the failing components of the multiple choice constraint.
   def self.check_multi(value, constraints, strict: nil, full: nil, verbose: nil, raise_errors: nil,
                        parent_path: nil, key: nil, errors: nil)
     if constraints.length == 0 || constraints.length == 1 && constraints.first == :optional
@@ -280,40 +282,33 @@ module ClassyHash
     # Optimize the common case of a direct class match
     return true if constraints.include?(value.class)
 
-    valid = false
+    # Accumulate all errors if full, just the last constraint's errors if not
+    local_errors = []
+    constraint_errors = full ? [] : local_errors
+
     constraints.each do |c|
       next if c == :optional
 
-      begin
-        valid ||= self.validate(
-          value,
-          c,
-          strict: strict,
-          full: full,
-          verbose: verbose,
-          raise_errors: raise_errors,
-          parent_path: parent_path,
-          key: key,
-          errors: errors
-        )
-      rescue => e
-        # Throw schema and array errors immediately
-        # FIXME: is raise_errors: false handled correctly?
-        # FIXME: is full: true handled correctly?
-        # FIXME: is this appropriate for something like [:optional, {a: Integer}, {b: Integer}, [[{c: Integer}]]]
-        # or [[{a: Integer}, {a: String}]]?
-        if (c.is_a?(Hash) && value.is_a?(Hash)) ||
-          (c.is_a?(Array) && value.is_a?(Array) && c.length == 1 && c.first.is_a?(Array))
-          raise e
-        end
-      end
+      constraint_errors.clear
+
+      # Only need one match to accept the value, so return if one is found
+      return true if self.validate(
+        value,
+        c,
+        strict: strict,
+        full: full,
+        verbose: verbose,
+        raise_errors: false,
+        parent_path: parent_path,
+        key: key,
+        errors: constraint_errors
+      )
+
+      local_errors.concat(constraint_errors) if full
     end
 
-    if !valid
-      add_error(raise_errors, errors, parent_path, key, constraints, value)
-    end
-
-    valid
+    errors.concat(local_errors) if errors
+    add_error(raise_errors, errors || local_errors, parent_path, key, constraints, value)
   end
 
   # Generates a String describing the +value+'s failure to match the
