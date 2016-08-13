@@ -313,7 +313,7 @@ describe ClassyHash do
           }
         ],
         [
-          /^:k9.*\[:opt3\]\[2\]\[:a\].*one of/,
+          /^:k9.*\[:opt3\]\[2\].*one of/,
           {
             k1: '1',
             k2: '2',
