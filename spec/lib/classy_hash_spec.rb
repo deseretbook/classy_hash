@@ -863,10 +863,10 @@ describe ClassyHash do
             expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(/Top level.*contains members/)
           end
 
-          it "includes unexpected hash #{idx} keys in error message if verbose is set" do
+          it "includes all unexpected hash #{idx} keys in error message if verbose is set" do
             expect {
               ClassyHash.validate_strict(h.merge(k999: 'a', k000: :b), d[:schema], true)
-            }.to raise_error(/k999.*schema/)
+            }.to raise_error(/contains members :k999, :k000 not specified in schema/)
           end
         end
 
@@ -893,7 +893,15 @@ describe ClassyHash do
 
           context 'strict parameter is true' do
             it "rejects good hash #{idx} with extra members" do
-              expect{ ClassyHash.validate(h.merge({k999: 'a', k000: :b}), d[:schema], strict: true, full: true) }.to raise_error
+              expect{
+                ClassyHash.validate(h.merge({k999: 'a', k000: :b}), d[:schema], strict: true, full: true)
+              }.to raise_error(/members not specified in schema/)
+            end
+
+            it "includes all unexpected hash #{idx} keys if verbose is set" do
+              expect{
+                ClassyHash.validate(h.merge({k999: 'a', k000: :b}), d[:schema], strict: true, full: true, verbose: true)
+              }.to raise_error(/members :k999, :k000 not specified in schema/)
             end
           end
         end
