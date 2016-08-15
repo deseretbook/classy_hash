@@ -213,31 +213,21 @@ module ClassyHash
 
     when CH::G::Composite
       constraint.constraints.each do |c|
-        # TODO: don't use exceptions internally; they are slow
-        negfail = false
-        begin
-          self.validate(
-            value,
-            c,
-            strict: strict,
-            full: full,
-            verbose: verbose,
-            raise_errors: true,
-            parent_path: parent_path,
-            key: key,
-            errors: errors
-          )
+        result = self.validate(
+          value,
+          c,
+          strict: strict,
+          full: full,
+          verbose: verbose,
+          raise_errors: false,
+          parent_path: parent_path,
+          key: key,
+          errors: nil
+        )
 
-          if constraint.negate
-            negfail = true
-            add_error(raise_below, errors, parent_path, key, constraint, value)
-            break
-          end
-        rescue => e
-          unless constraint.negate && !negfail
-            add_error(raise_below, errors, parent_path, key, constraint, value)
-            break
-          end
+        if constraint.negate == result
+          add_error(raise_below, errors, parent_path, key, constraint, value)
+          break
         end
       end
 
