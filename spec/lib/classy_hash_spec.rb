@@ -828,6 +828,40 @@ describe ClassyHash do
         { full_path: ':b[:c]', message: 'present' }
       ]
     end
+
+    context 'strict is true' do
+      let(:schema) {
+        {
+          a: {},
+          b: {},
+          c: {},
+          d: [[{}]], # An array of empty Hashes
+        }
+      }
+
+      let(:hash) {
+        {
+          a: { k000: 0, k001: 1 },
+          b: { k002: 2, k003: 3 },
+          c: { k004: 4, k005: 5 },
+          d: [{}, {}, {}, { not_empty: true, at_all: true }],
+          k006: 6,
+          k007: 7,
+        }
+      }
+
+      it 'accepts a valid hash' do
+        expect{
+          ClassyHash.validate({a: {}, b: {}, c: {}, d: [{}, {}, {}]}, schema, full: true, strict: true, verbose: true)
+        }.not_to raise_error
+      end
+
+      it 'includes unexpected hash keys for all levels if verbose is true' do
+        expect{
+          ClassyHash.validate(hash, schema, full: true, strict: true, verbose: true)
+        }.to raise_error(/Top level.*:k006, :k007.*:a.*:k000, :k001.*:b.*:k002, :k003.*:c.*:k004, :k005.*:d\[3\].*:not_empty, :at_all/)
+      end
+    end
   end
 
   # Integrated tests (see test data at the top of the file)
