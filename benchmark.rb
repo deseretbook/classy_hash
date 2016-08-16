@@ -266,6 +266,21 @@ VALIDATORS = {
       ClassyHash.validate(hash, classy_schema, strict: true, full: true)
     }
   },
+  classy_hash_no_raise: {
+    divisor: 1,
+    validator: lambda{|hash|
+      raise unless ClassyHash.validate(hash, classy_schema, raise_errors: false)
+    }
+  },
+  classy_hash_errors_array: {
+    divisor: 1,
+    validator: lambda{|hash|
+      $ch_errors ||= []
+      $ch_errors.clear
+      ClassyHash.validate(hash, classy_schema, raise_errors: false, errors: $ch_errors)
+      raise $ch_errors.inspect if $ch_errors.any?
+    }
+  },
 
   hash_validator: {
     divisor: 2,
