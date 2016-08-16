@@ -141,7 +141,7 @@ module ClassyHash
               strict: strict,
               full: full,
               verbose: verbose,
-              raise_errors: raise_errors && !full,
+              raise_errors: raise_below,
               parent_path: join_path(parent_path, key),
               key: idx,
               errors: errors
@@ -156,7 +156,7 @@ module ClassyHash
           strict: strict,
           full: full,
           verbose: verbose,
-          raise_errors: raise_errors,
+          raise_errors: raise_below,
           parent_path: parent_path,
           key: key,
           errors: errors
