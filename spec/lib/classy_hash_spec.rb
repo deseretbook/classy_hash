@@ -829,6 +829,16 @@ describe ClassyHash do
       ]
     end
 
+    it 'can collect errors from range types' do
+      schema = {a: 1..10, b: 1.0..10.0, c: '1'..'9', d: [0]..[9]}
+      hash = {a: 5.0, b: 'five', c: 5, d: [500]}
+      expect{ ClassyHash.validate(hash, schema, full: true) }.to raise_error(/:a.*Integer.*:b.*Numeric.*:c.*String.*:d.*in range/)
+
+      errors = []
+      expect(ClassyHash.validate(hash, schema, full: true, raise_errors: false, errors: errors)).to eq(false)
+      expect(errors.count).to eq(4)
+    end
+
     context 'strict is true' do
       let(:schema) {
         {

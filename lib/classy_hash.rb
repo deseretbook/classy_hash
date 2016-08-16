@@ -201,7 +201,7 @@ module ClassyHash
         end
       end
 
-      unless range_type_valid && constraint.cover?(value)
+      if range_type_valid && !constraint.cover?(value)
         add_error(raise_below, errors, parent_path, key, constraint, value)
       end
 
