@@ -7,11 +7,14 @@
 # match a given schema.  ClassyHash runs fast by taking advantage of Ruby
 # language features and avoiding object creation during validation.
 module ClassyHash
+
+  class ValidationError < StandardError; end
+
   # Validates a +hash+ against a +schema+.  The +parent_path+ parameter is used
   # internally to generate error messages.
   def self.validate(hash, schema, parent_path=nil)
-    raise 'Must validate a Hash' unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
-    raise 'Schema must be a Hash' unless schema.is_a?(Hash) # TODO: Allow individual element validations?
+    raise ValidationError.new('Must validate a Hash') unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
+    raise ValidationError.new('Schema must be a Hash') unless schema.is_a?(Hash) # TODO: Allow individual element validations?
 
     schema.each do |key, constraint|
       if hash.include?(key)
@@ -28,15 +31,15 @@ module ClassyHash
   # Only the top-level schema is strictly validated.  If +verbose+ is true, the
   # names of unexpected keys will be included in the error message.
   def self.validate_strict(hash, schema, verbose=false, parent_path=nil)
-    raise 'Must validate a Hash' unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
-    raise 'Schema must be a Hash' unless schema.is_a?(Hash) # TODO: Allow individual element validations?
+    raise ValidationError.new('Must validate a Hash') unless hash.is_a?(Hash) # TODO: Allow validating other types by passing to #check_one?
+    raise ValidationError.new('Schema must be a Hash') unless schema.is_a?(Hash) # TODO: Allow individual element validations?
 
     extra_keys = hash.keys - schema.keys
     unless extra_keys.empty?
       if verbose
-        raise "Hash contains members (#{extra_keys.map(&:inspect).join(', ')}) not specified in schema"
+        raise ValidationError.new("Hash contains members (#{extra_keys.map(&:inspect).join(', ')}) not specified in schema")
       else
-        raise 'Hash contains members not specified in schema'
+        raise ValidationError.new('Hash contains members not specified in schema')
       end
     end
 
@@ -172,7 +175,7 @@ module ClassyHash
   # +parent_path+ fails because the value "is not #{+message+}".
   def self.raise_error(parent_path, key, message)
     # TODO: Ability to validate all keys
-    raise "#{self.join_path(parent_path, key)} is not #{message}"
+    raise ValidationError.new("#{self.join_path(parent_path, key)} is not #{message}")
   end
 end
 
