@@ -93,7 +93,8 @@ ClassyHash.validate(hash, schema) # Throws ":key2 is not a/an Integer"
 
 The `validate` and `validate_strict` methods will raise an exception if
 validation fails.  Validation proceeds until the first invalid value is found,
-then an error is thrown for that value.  Later values are not checked.
+then an error (ClassyHash::ValidationError) is thrown for that value.  
+Later values are not checked.
 
 
 #### Multiple choice

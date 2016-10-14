@@ -515,11 +515,11 @@ describe ClassyHash do
     end
 
     it 'rejects basic invalid values' do
-      expect{ ClassyHash.validate({a: nil}, {a: String}) }.to raise_error(/not.*String/)
-      expect{ ClassyHash.validate({a: 3}, {a: String}) }.to raise_error(/not.*String/)
-      expect{ ClassyHash.validate({a: false}, {a: Numeric}) }.to raise_error(/not.*Numeric/)
-      expect{ ClassyHash.validate({a: {q: :q}}, {a: Array}) }.to raise_error(/not.*Array/)
-      expect{ ClassyHash.validate({a: [:q, :q]}, {a: Hash}) }.to raise_error(/not.*Hash/)
+      expect{ ClassyHash.validate({a: nil}, {a: String}) }.to raise_error(ClassyHash::ValidationError, /not.*String/)
+      expect{ ClassyHash.validate({a: 3}, {a: String}) }.to raise_error(ClassyHash::ValidationError, /not.*String/)
+      expect{ ClassyHash.validate({a: false}, {a: Numeric}) }.to raise_error(ClassyHash::ValidationError, /not.*Numeric/)
+      expect{ ClassyHash.validate({a: {q: :q}}, {a: Array}) }.to raise_error(ClassyHash::ValidationError, /not.*Array/)
+      expect{ ClassyHash.validate({a: [:q, :q]}, {a: Hash}) }.to raise_error(ClassyHash::ValidationError, /not.*Hash/)
     end
 
     it 'accepts fixnum, bignum, float, and rational for numeric' do
@@ -531,9 +531,9 @@ describe ClassyHash do
 
     it 'rejects float, bignum, and rational for fixnum' do
       # TODO: Ruby 2.4 merges Bignum and Fixnum into Integer
-      expect{ ClassyHash.validate({a: 1.0}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
-      expect{ ClassyHash.validate({a: 1<<200}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
-      expect{ ClassyHash.validate({a: Rational(1, 3)}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
+      expect{ ClassyHash.validate({a: 1.0}, {a: Fixnum}) }.to raise_error(ClassyHash::ValidationError, /not.*(Integer|Fixnum)/)
+      expect{ ClassyHash.validate({a: 1<<200}, {a: Fixnum}) }.to raise_error(ClassyHash::ValidationError, /not.*(Integer|Fixnum)/)
+      expect{ ClassyHash.validate({a: Rational(1, 3)}, {a: Fixnum}) }.to raise_error(ClassyHash::ValidationError, /not.*(Integer|Fixnum)/)
     end
 
     it 'accepts valid multiple choice values' do
@@ -545,10 +545,10 @@ describe ClassyHash do
     end
 
     it 'rejects invalid multiple choice values' do
-      expect{ ClassyHash.validate({a: nil}, {a: [String]}) }.to raise_error(/one of.*String/)
-      expect{ ClassyHash.validate({a: false}, {a: [NilClass]}) }.to raise_error(/one of.*Nil/)
-      expect{ ClassyHash.validate({a: 1}, {a: [String]}) }.to raise_error(/one of.*String/)
-      expect{ ClassyHash.validate({a: 1}, {a: [String, Rational, NilClass]}) }.to raise_error(/one of.*String.*Rational.*Nil/)
+      expect{ ClassyHash.validate({a: nil}, {a: [String]}) }.to raise_error(ClassyHash::ValidationError, /one of.*String/)
+      expect{ ClassyHash.validate({a: false}, {a: [NilClass]}) }.to raise_error(ClassyHash::ValidationError, /one of.*Nil/)
+      expect{ ClassyHash.validate({a: 1}, {a: [String]}) }.to raise_error(ClassyHash::ValidationError, /one of.*String/)
+      expect{ ClassyHash.validate({a: 1}, {a: [String, Rational, NilClass]}) }.to raise_error(ClassyHash::ValidationError, /one of.*String.*Rational.*Nil/)
     end
 
     it 'accepts both true and false for just TrueClass or just FalseClass' do
@@ -562,10 +562,10 @@ describe ClassyHash do
     end
 
     it 'rejects invalid values for TrueClass and FalseClass' do
-      expect{ ClassyHash.validate({a: 1}, {a: TrueClass}) }.to raise_error(/true or false/)
-      expect{ ClassyHash.validate({a: 0}, {a: FalseClass}) }.to raise_error(/true or false/)
-      expect{ ClassyHash.validate({a: 1}, {a: [TrueClass]}) }.to raise_error(/one of.*true or false/)
-      expect{ ClassyHash.validate({a: 0}, {a: [FalseClass]}) }.to raise_error(/one of.*true or false/)
+      expect{ ClassyHash.validate({a: 1}, {a: TrueClass}) }.to raise_error(ClassyHash::ValidationError, /true or false/)
+      expect{ ClassyHash.validate({a: 0}, {a: FalseClass}) }.to raise_error(ClassyHash::ValidationError, /true or false/)
+      expect{ ClassyHash.validate({a: 1}, {a: [TrueClass]}) }.to raise_error(ClassyHash::ValidationError, /one of.*true or false/)
+      expect{ ClassyHash.validate({a: 0}, {a: [FalseClass]}) }.to raise_error(ClassyHash::ValidationError, /one of.*true or false/)
     end
 
     it 'requires both TrueClass and FalseClass for true or false in multiple choices' do
@@ -581,10 +581,10 @@ describe ClassyHash do
     end
 
     it 'rejects invalid single-choice arrays' do
-      expect{ ClassyHash.validate({a: [nil]}, {a: [[String]]}) }.to raise_error(/\[0\].*String/)
-      expect{ ClassyHash.validate({a: ['hi', 'hello', 'heya', :optional]}, {a: [[String]]}) }.to raise_error(/\[3\].*String/)
-      expect{ ClassyHash.validate({a: [1]}, {a: [[String]]}) }.to raise_error(/\[0\].*String/)
-      expect{ ClassyHash.validate({a: [1, 2, 3, '']}, {a: [[Integer]]}) }.to raise_error(/\[3\].*Integer/)
+      expect{ ClassyHash.validate({a: [nil]}, {a: [[String]]}) }.to raise_error(ClassyHash::ValidationError, /\[0\].*String/)
+      expect{ ClassyHash.validate({a: ['hi', 'hello', 'heya', :optional]}, {a: [[String]]}) }.to raise_error(ClassyHash::ValidationError, /\[3\].*String/)
+      expect{ ClassyHash.validate({a: [1]}, {a: [[String]]}) }.to raise_error(ClassyHash::ValidationError, /\[0\].*String/)
+      expect{ ClassyHash.validate({a: [1, 2, 3, '']}, {a: [[Integer]]}) }.to raise_error(ClassyHash::ValidationError, /\[3\].*Integer/)
     end
 
     it 'accepts valid multiple-choice arrays' do
@@ -597,10 +597,10 @@ describe ClassyHash do
 
     it 'rejects invalid multiple-choice arrays' do
       schema = { a: [[String, TrueClass, Float]] }
-      expect{ ClassyHash.validate({a: [nil]}, schema) }.to raise_error(/\[0\].*String.*true or false.*Float/)
-      expect{ ClassyHash.validate({a: ['hi', 'hello', 'heya', :optional]}, schema) }.to raise_error(/\[3\].*String.*true or false.*Float/)
-      expect{ ClassyHash.validate({a: [1]}, schema) }.to raise_error(/\[0\].*String.*true or false.*Float/)
-      expect{ ClassyHash.validate({a: [1, 2, 3, '']}, {a: [[Integer, Float]]}) }.to raise_error(/\[3\].*Integer.*Float/)
+      expect{ ClassyHash.validate({a: [nil]}, schema) }.to raise_error(ClassyHash::ValidationError, /\[0\].*String.*true or false.*Float/)
+      expect{ ClassyHash.validate({a: ['hi', 'hello', 'heya', :optional]}, schema) }.to raise_error(ClassyHash::ValidationError, /\[3\].*String.*true or false.*Float/)
+      expect{ ClassyHash.validate({a: [1]}, schema) }.to raise_error(ClassyHash::ValidationError, /\[0\].*String.*true or false.*Float/)
+      expect{ ClassyHash.validate({a: [1, 2, 3, '']}, {a: [[Integer, Float]]}) }.to raise_error(ClassyHash::ValidationError, /\[3\].*Integer.*Float/)
     end
 
     it 'accepts valid arrays with schemas' do
@@ -608,19 +608,19 @@ describe ClassyHash do
     end
 
     it 'rejects invalid arrays with schemas' do
-      expect { ClassyHash.validate({a: [{c: 1}, {b: 2.1}, 5]}, {a: [[{b: Numeric}, Integer]]}) }.to raise_error(/present/)
-      expect { ClassyHash.validate({a: [{b: 1}, {b: 2.1}, 5.0]}, {a: [[{b: Numeric}, Integer]]}) }.to raise_error(/\[2\]/)
+      expect { ClassyHash.validate({a: [{c: 1}, {b: 2.1}, 5]}, {a: [[{b: Numeric}, Integer]]}) }.to raise_error(ClassyHash::ValidationError, /present/)
+      expect { ClassyHash.validate({a: [{b: 1}, {b: 2.1}, 5.0]}, {a: [[{b: Numeric}, Integer]]}) }.to raise_error(ClassyHash::ValidationError, /\[2\]/)
     end
 
     it 'handles more than one key' do
       expect{ ClassyHash.validate({a: true, b: 'str'}, {a: TrueClass, b: String}) }.not_to raise_error
-      expect{ ClassyHash.validate({a: 'str', b: true}, {a: TrueClass, b: String}) }.to raise_error(/:a.*true or false/)
+      expect{ ClassyHash.validate({a: 'str', b: true}, {a: TrueClass, b: String}) }.to raise_error(ClassyHash::ValidationError, /:a.*true or false/)
     end
 
     it 'rejects hashes with missing keys' do
-      expect{ ClassyHash.validate({}, {a: NilClass}) }.to raise_error(/:a.*present/)
-      expect{ ClassyHash.validate({}, {a: Integer}) }.to raise_error(/:a.*present/)
-      expect{ ClassyHash.validate({a: 1}, {a: Integer, b: NilClass}) }.to raise_error(/:b.*present/)
+      expect{ ClassyHash.validate({}, {a: NilClass}) }.to raise_error(ClassyHash::ValidationError, /:a.*present/)
+      expect{ ClassyHash.validate({}, {a: Integer}) }.to raise_error(ClassyHash::ValidationError, /:a.*present/)
+      expect{ ClassyHash.validate({a: 1}, {a: Integer, b: NilClass}) }.to raise_error(ClassyHash::ValidationError, /:b.*present/)
     end
 
     it 'accepts valid or missing optional keys' do
@@ -637,29 +637,29 @@ describe ClassyHash do
     end
 
     it 'rejects invalid optional keys' do
-      expect{ ClassyHash.validate({a: nil}, {a: [:optional, Integer]}) }.to raise_error(/:a.*Integer/)
-      expect{ ClassyHash.validate({a: 'str'}, {a: [:optional, Integer]}) }.to raise_error(/:a.*Integer/)
-      expect{ ClassyHash.validate({a: :sym1}, {a: [:optional, Integer, String]}) }.to raise_error(/:a.*one of.*Integer.*String/)
+      expect{ ClassyHash.validate({a: nil}, {a: [:optional, Integer]}) }.to raise_error(ClassyHash::ValidationError, /:a.*Integer/)
+      expect{ ClassyHash.validate({a: 'str'}, {a: [:optional, Integer]}) }.to raise_error(ClassyHash::ValidationError, /:a.*Integer/)
+      expect{ ClassyHash.validate({a: :sym1}, {a: [:optional, Integer, String]}) }.to raise_error(ClassyHash::ValidationError, /:a.*one of.*Integer.*String/)
     end
 
     it 'rejects invalid optional arrays' do
-      expect{ ClassyHash.validate({a: [5.5]}, {a: [:optional, [[Integer]] ]}) }.to raise_error(/\[0\].*Integer/)
-      expect{ ClassyHash.validate({a: [1, 2, 3, 'str']}, {a: [:optional, [[Integer]] ]}) }.to raise_error(/\[3\]/)
+      expect{ ClassyHash.validate({a: [5.5]}, {a: [:optional, [[Integer]] ]}) }.to raise_error(ClassyHash::ValidationError, /\[0\].*Integer/)
+      expect{ ClassyHash.validate({a: [1, 2, 3, 'str']}, {a: [:optional, [[Integer]] ]}) }.to raise_error(ClassyHash::ValidationError, /\[3\]/)
     end
 
     it 'accepts missing optional member with proc that would always fail' do
       # We can ensure a member is *never* present with this construct
       expect{ ClassyHash.validate({}, {a: [:optional, lambda {|v| false}]}) }.not_to raise_error
-      expect{ ClassyHash.validate({a: nil}, {a: [:optional, lambda {|v| false}]}) }.to raise_error(/accepted by/)
+      expect{ ClassyHash.validate({a: nil}, {a: [:optional, lambda {|v| false}]}) }.to raise_error(ClassyHash::ValidationError, /accepted by/)
     end
 
     it 'accepts or rejects hashes using a proc' do
       expect{ ClassyHash.validate({a: 1}, {a: lambda {|v| v == 1}}) }.not_to raise_error
-      expect{ ClassyHash.validate({a: -1}, {a: lambda {|v| v == 1}}) }.to raise_error(/accepted by Proc/)
+      expect{ ClassyHash.validate({a: -1}, {a: lambda {|v| v == 1}}) }.to raise_error(ClassyHash::ValidationError, /accepted by Proc/)
     end
 
     it 'uses error messages returned by a proc' do
-      expect{ ClassyHash.validate({a: 1}, {a: lambda {|v| 'no way'}}) }.to raise_error(/no way/)
+      expect{ ClassyHash.validate({a: 1}, {a: lambda {|v| 'no way'}}) }.to raise_error(ClassyHash::ValidationError, /no way/)
     end
 
     it 'accepts valid values using a range' do
@@ -670,45 +670,45 @@ describe ClassyHash do
     end
 
     it 'rejects out-of-range values using a range' do
-      expect{ ClassyHash.validate({a: 0}, {a: 1..2}) }.to raise_error(/in range/)
-      expect{ ClassyHash.validate({a: Rational(1, 2)}, {a: 1.0..2.0}) }.to raise_error(/in range/)
-      expect{ ClassyHash.validate({a: 'spinach'}, {a: 'cabbage'..'cauliflower'}) }.to raise_error(/in range/)
-      expect{ ClassyHash.validate({a: [2, 1]}, {a: [0]..[2]}) }.to raise_error(/in range/)
+      expect{ ClassyHash.validate({a: 0}, {a: 1..2}) }.to raise_error(ClassyHash::ValidationError, /in range/)
+      expect{ ClassyHash.validate({a: Rational(1, 2)}, {a: 1.0..2.0}) }.to raise_error(ClassyHash::ValidationError, /in range/)
+      expect{ ClassyHash.validate({a: 'spinach'}, {a: 'cabbage'..'cauliflower'}) }.to raise_error(ClassyHash::ValidationError, /in range/)
+      expect{ ClassyHash.validate({a: [2, 1]}, {a: [0]..[2]}) }.to raise_error(ClassyHash::ValidationError, /in range/)
     end
 
     it 'rejects invalid types using a range' do
-      expect{ ClassyHash.validate({a: 1.0}, {a: 1..2}) }.to raise_error(/Integer/)
-      expect{ ClassyHash.validate({a: 1}, {a: 'a'..'z'}) }.to raise_error(/String/)
+      expect{ ClassyHash.validate({a: 1.0}, {a: 1..2}) }.to raise_error(ClassyHash::ValidationError, /Integer/)
+      expect{ ClassyHash.validate({a: 1}, {a: 'a'..'z'}) }.to raise_error(ClassyHash::ValidationError, /String/)
     end
 
     it 'rejects non-hashes' do
-      expect{ ClassyHash.validate(false, {}) }.to raise_error(/hash/i)
-      expect{ ClassyHash.validate({}, false) }.to raise_error(/hash/i)
+      expect{ ClassyHash.validate(false, {}) }.to raise_error(ClassyHash::ValidationError, /hash/i)
+      expect{ ClassyHash.validate({}, false) }.to raise_error(ClassyHash::ValidationError, /hash/i)
     end
 
     it 'rejects invalid schema elements' do
-      expect{ ClassyHash.validate({a: 1}, {a: :invalid}) }.to raise_error(/valid.*constraint/)
+      expect{ ClassyHash.validate({a: 1}, {a: :invalid}) }.to raise_error(ClassyHash::ValidationError, /valid.*constraint/)
     end
 
     it 'rejects empty multiple choice constraints' do
-      expect{ ClassyHash.validate({a: nil}, {a: []}) }.to raise_error(/choice.*empty/)
-      expect{ ClassyHash.validate({a: [1]}, {a: [[]]}) }.to raise_error(/choice.*empty/)
+      expect{ ClassyHash.validate({a: nil}, {a: []}) }.to raise_error(ClassyHash::ValidationError, /choice.*empty/)
+      expect{ ClassyHash.validate({a: [1]}, {a: [[]]}) }.to raise_error(ClassyHash::ValidationError, /choice.*empty/)
     end
 
     it 'accepts or rejects Strings using a partial-string regex' do
       schema = { a: /(in)?[1-9]{1,3}/ }
-      expect{ ClassyHash.validate({a: 3}, schema) }.to raise_error(/String.*match/)
+      expect{ ClassyHash.validate({a: 3}, schema) }.to raise_error(ClassyHash::ValidationError, /String.*match/)
       expect{ ClassyHash.validate({a: 3.to_s}, schema) }.not_to raise_error
-      expect{ ClassyHash.validate({a: nil}, schema) }.to raise_error(/String.*match/)
-      expect{ ClassyHash.validate({a: 'in0'}, schema) }.to raise_error(/String.*match/)
+      expect{ ClassyHash.validate({a: nil}, schema) }.to raise_error(ClassyHash::ValidationError, /String.*match/)
+      expect{ ClassyHash.validate({a: 'in0'}, schema) }.to raise_error(ClassyHash::ValidationError, /String.*match/)
       expect{ ClassyHash.validate({a: 'in1'}, schema) }.not_to raise_error
       expect{ ClassyHash.validate({a: 'the middle can be in923 ok'}, schema) }.not_to raise_error
     end
 
     it 'accepts or rejects Strings using a whole-string regex' do
       schema = { a: /\Athe.*string\z/i }
-      expect{ ClassyHash.validate({a: /the string/}, schema) }.to raise_error(/String.*match/)
-      expect{ ClassyHash.validate({a: 'not the string'}, schema) }.to raise_error(/String.*match/)
+      expect{ ClassyHash.validate({a: /the string/}, schema) }.to raise_error(ClassyHash::ValidationError, /String.*match/)
+      expect{ ClassyHash.validate({a: 'not the string'}, schema) }.to raise_error(ClassyHash::ValidationError, /String.*match/)
       expect{ ClassyHash.validate({a: 'The WHOLE String'}, schema) }.not_to raise_error
     end
 
@@ -731,16 +731,16 @@ describe ClassyHash do
 
   describe '.validate_strict' do
     it 'rejects non-hashes' do
-      expect{ ClassyHash.validate_strict(false, {}) }.to raise_error(/hash/i)
-      expect{ ClassyHash.validate_strict({}, false) }.to raise_error(/hash/i)
+      expect{ ClassyHash.validate_strict(false, {}) }.to raise_error(ClassyHash::ValidationError, /hash/i)
+      expect{ ClassyHash.validate_strict({}, false) }.to raise_error(ClassyHash::ValidationError, /hash/i)
     end
 
     context 'schema is empty' do
       it 'rejects all non-empty hashes' do
         expect{ ClassyHash.validate_strict({}, {}) }.not_to raise_error
-        expect{ ClassyHash.validate_strict({a: 1}, {}) }.to raise_error(/not specified/)
-        expect{ ClassyHash.validate_strict({[1] => [2]}, {}) }.to raise_error(/not specified/)
-        expect{ ClassyHash.validate_strict({ {} => {} }, {}) }.to raise_error(/not specified/)
+        expect{ ClassyHash.validate_strict({a: 1}, {}) }.to raise_error(ClassyHash::ValidationError, /not specified/)
+        expect{ ClassyHash.validate_strict({[1] => [2]}, {}) }.to raise_error(ClassyHash::ValidationError, /not specified/)
+        expect{ ClassyHash.validate_strict({ {} => {} }, {}) }.to raise_error(ClassyHash::ValidationError, /not specified/)
       end
     end
   end
@@ -761,7 +761,7 @@ describe ClassyHash do
 
         d[:bad].each_with_index do |info, idx|
           it "rejects bad hash #{idx}" do
-            expect{ ClassyHash.validate(info[1], d[:schema]) }.to raise_error(info[0])
+            expect{ ClassyHash.validate(info[1], d[:schema]) }.to raise_error(ClassyHash::ValidationError, info[0])
           end
         end
       end
@@ -775,19 +775,19 @@ describe ClassyHash do
           end
 
           it "rejects good hash #{idx} with extra members" do
-            expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(/contains members/)
+            expect{ ClassyHash.validate_strict(h.merge({k999: 'a', k000: :b}), d[:schema]) }.to raise_error(ClassyHash::ValidationError, /contains members/)
           end
 
           it "includes unexpected hash #{idx} keys in error message if verbose is set" do
             expect {
               ClassyHash.validate_strict(h.merge(k999: 'a', k000: :b), d[:schema], true)
-            }.to raise_error(/k999.*schema/)
+            }.to raise_error(ClassyHash::ValidationError, /k999.*schema/)
           end
         end
 
         d[:bad].each_with_index do |info, idx|
           it "rejects bad hash #{idx}" do
-            expect{ ClassyHash.validate_strict(info[1], d[:schema]) }.to raise_error(info[0])
+            expect{ ClassyHash.validate_strict(info[1], d[:schema]) }.to raise_error(ClassyHash::ValidationError, info[0])
           end
         end
       end
