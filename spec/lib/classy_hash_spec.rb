@@ -793,4 +793,9 @@ describe ClassyHash do
       end
     end
   end
+  describe 'Strict nested validation', :focus do
+    it 'Should properly use strict validation on nested schemas' do
+      expect{ ClassyHash.validate_strict({ a: [{ b: 1, c: 2 }] }, { a: [[{ b: Integer }]] } )}.to raise_error(ClassyHash::ValidationError)
+    end
+  end
 end
