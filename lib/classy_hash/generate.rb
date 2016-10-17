@@ -30,10 +30,10 @@ module ClassyHash
     #     ClassyHash.validate({a: '12345'}, schema)
     #     ClassyHash.validate({a: [1, 2, 3, 4, 5]}, schema)
     def self.length(length)
-      raise "length must be an Integer or a Range" unless length.is_a?(Integer) || length.is_a?(Range)
+      ClassyHash.error "length must be an Integer or a Range" unless length.is_a?(Integer) || length.is_a?(Range)
 
       if length.is_a?(Range) && !(length.min.is_a?(Integer) && length.max.is_a?(Integer))
-        raise "Range length endpoints must be Integers"
+        ClassyHash.error "range length endpoints must be Integers"
       end
 
       lambda {|v|
@@ -58,7 +58,7 @@ module ClassyHash
     #     }
     #     ClassyHash.validate({ a: [ 1, 2, 3, 'four', 5 ] }, schema)
     def self.array_length(length, *constraints)
-      raise 'one or more constraints must be provided' if constraints.empty?
+      ClassyHash.error 'one or more constraints must be provided' if constraints.empty?
 
       length_lambda = self.length(length)
       msg = "an Array of length #{length}"
