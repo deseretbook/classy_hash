@@ -80,15 +80,18 @@ module ClassyHash
       if constraint == TrueClass || constraint == FalseClass
         unless value == true || value == false
           add_error(raise_below, errors, parent_path, key, constraint, value)
+          return false unless full
         end
       elsif !value.is_a?(constraint)
         add_error(raise_below, errors, parent_path, key, constraint, value)
+        return false unless full
       end
 
     when Hash
       # Recursively check nested Hashes
       if !value.is_a?(Hash)
         add_error(raise_below, errors, parent_path, key, constraint, value)
+        return false unless full
       else
         if strict
           extra_keys = value.keys - constraint.keys
@@ -100,6 +103,7 @@ module ClassyHash
             end
 
             add_error(raise_below, errors, parent_path, key, msg, NO_VALUE)
+            return false unless full
           end
         end
 
@@ -122,6 +126,7 @@ module ClassyHash
             )
           elsif !(c.is_a?(Array) && c.first == :optional)
             add_error(raise_below, errors, parent_path, k, "present", NO_VALUE)
+            return false unless full
           end
         end
       end
@@ -132,10 +137,11 @@ module ClassyHash
         # Array validation
         if !value.is_a?(Array)
           add_error(raise_below, errors, parent_path, key, constraint, value)
+          return false unless full
         else
           constraints = constraint.first
           value.each_with_index do |v, idx|
-            self.check_multi(
+            res = self.check_multi(
               v,
               constraints,
               strict: strict,
@@ -146,11 +152,12 @@ module ClassyHash
               key: idx,
               errors: errors
             )
+            return false unless res || full
           end
         end
       else
         # Multiple choice
-        self.check_multi(
+        res = self.check_multi(
           value,
           constraint,
           strict: strict,
@@ -161,12 +168,14 @@ module ClassyHash
           key: key,
           errors: errors
         )
+        return false unless res || full
       end
 
     when Regexp
       # Constrain value to be a String matching a Regexp
       unless value.is_a?(String) && value =~ constraint
         add_error(raise_below, errors, parent_path, key, constraint, value)
+        return false unless full
       end
 
     when Proc
@@ -178,6 +187,7 @@ module ClassyHash
         else
           add_error(raise_below, errors, parent_path, key, constraint, value)
         end
+        return false unless full
       end
 
     when Range
@@ -187,28 +197,33 @@ module ClassyHash
       if constraint.min.is_a?(Integer) && constraint.max.is_a?(Integer)
         unless value.is_a?(Integer)
           add_error(raise_below, errors, parent_path, key, constraint, value)
+          return false unless full
           range_type_valid = false
         end
       elsif constraint.min.is_a?(Numeric)
         unless value.is_a?(Numeric)
           add_error(raise_below, errors, parent_path, key, constraint, value)
+          return false unless full
           range_type_valid = false
         end
       elsif constraint.min.is_a?(String)
         unless value.is_a?(String)
           add_error(raise_below, errors, parent_path, key, constraint, value)
+          return false unless full
           range_type_valid = false
         end
       end
 
       if range_type_valid && !constraint.cover?(value)
         add_error(raise_below, errors, parent_path, key, constraint, value)
+        return false unless full
       end
 
     when Set
       # Set/enumeration
       unless constraint.include?(value)
         add_error(raise_below, errors, parent_path, key, constraint, value)
+        return false unless full
       end
 
     when CH::G::Composite
@@ -227,6 +242,7 @@ module ClassyHash
 
         if constraint.negate == result
           add_error(raise_below, errors, parent_path, key, constraint, value)
+          return false unless full
           break
         end
       end
@@ -238,6 +254,7 @@ module ClassyHash
     else
       # Unknown schema constraint
       add_error(raise_below, errors, parent_path, key, constraint, value)
+      return false unless full
     end
 
     if raise_errors && errors && errors.any?
