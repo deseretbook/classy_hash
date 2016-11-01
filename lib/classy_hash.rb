@@ -373,6 +373,9 @@ module ClassyHash
     when CH::G::Composite
       constraint.describe(value)
 
+    when :optional
+      "absent (marked as :optional)"
+
     else
       "a valid schema constraint: #{constraint.inspect}"
 
