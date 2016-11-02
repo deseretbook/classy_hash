@@ -41,7 +41,7 @@ describe ClassyHash do
       ],
     },
     {
-      name: 'multiple choice',
+      name: 'ambiguous multiple choice',
 
       # Note: This is not the best way to structure multiple-choice schemas
       schema: {
@@ -82,7 +82,7 @@ describe ClassyHash do
           { requests: [ { data: { field1: 'One', field2: 2.0, field3: 'Z' } } ] },
         ],
         [
-          %r{^:requests\[1\]\[:data\]\[:field3\] is not.*one of a/an Integer, a/an String},
+          %r{^:requests\[1\]\[:data\](\[:field1\] is not a/an String|\[:field3\] is not.*one of a/an Integer, a/an String)},
           { requests: [
             { data: { field1: 'One', field2: 2, field3: 'Three' } },
             { data: { field1: 1, field2: 2, field3: nil } },
@@ -638,6 +638,18 @@ describe ClassyHash do
       expect{ ClassyHash.validate({a: false}, {a: [NilClass]}) }.to raise_error(/one of.*Nil/)
       expect{ ClassyHash.validate({a: 1}, {a: [String]}) }.to raise_error(/one of.*String/)
       expect{ ClassyHash.validate({a: 1}, {a: [String, Rational, NilClass]}) }.to raise_error(/one of.*String.*Rational.*Nil/)
+    end
+
+    it 'starts with the closest matching schema for errors from multiple-choice schemas when full is false' do
+      schema = {
+        a: [{ a: Integer }, { b: String }]
+      }
+
+      expect{ ClassyHash.validate({a: {a: 'A'}}, schema) }.to raise_error(%r{^:a\[:a\] is not a/an Integer})
+      expect{ ClassyHash.validate({a: {b: 1}}, schema) }.to raise_error(%r{^:a\[:b\] is not a/an String})
+
+      expect{ ClassyHash.validate({a: {a: 1}}, schema) }.not_to raise_error
+      expect{ ClassyHash.validate({a: {b: 'A'}}, schema) }.not_to raise_error
     end
 
     it 'accepts both true and false for just TrueClass or just FalseClass' do
