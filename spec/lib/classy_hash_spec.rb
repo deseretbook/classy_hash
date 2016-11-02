@@ -859,6 +859,10 @@ describe ClassyHash do
       expect(ex.entries.length).to eq(1)
     end
 
+    it 'handles invalid data passed in the errors array' do
+      expect{ ClassyHash.validate({}, {}, errors: ['invalid']) }.to raise_error(/ERR:.*invalid/)
+    end
+
     context 'schema is empty' do
       it 'accepts all hashes' do
         expect{ ClassyHash.validate({}, {}) }.not_to raise_error

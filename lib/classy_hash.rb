@@ -30,7 +30,11 @@ module ClassyHash
     # Joins all errors passed to the constructor into a comma-separated String.
     def to_s
       @msg ||= @entries.map{|e|
-        "#{e[:full_path]} is not #{e[:message]}"
+        begin
+          "#{e[:full_path]} is not #{e[:message]}"
+        rescue
+          "ERR: #{e.inspect}"
+        end
       }.join(', ')
     end
   end
