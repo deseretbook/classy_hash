@@ -47,7 +47,8 @@ module ClassyHash
   # Validates a +value+ against a ClassyHash +constraint+.  Typically +value+
   # is a Hash and +constraint+ is a ClassyHash schema.
   #
-  # Returns false if validation fails and errors were not raised.
+  # Returns false if validation fails and raise_errors was false.  Otherwise
+  # returns true.
   #
   # Parameters:
   #   value - The Hash or other value to validate.
@@ -64,7 +65,8 @@ module ClassyHash
   #           be returned as a String.  Default is true.
   #   :errors - Used internally for aggregating error messages.  You can also
   #           pass in an Array here to collect any errors (useful if
-  #           raise_errors is false).
+  #           raise_errors is false).  If you pass a non-empty array,
+  #           validation will fail.
   #   :parent_path - Used internally for tracking the current validation path
   #           in error messages (e.g. :key1[:key2][0]).
   #   :key - Used internally for tracking the current validation key in error
@@ -348,6 +350,7 @@ module ClassyHash
         ]
       }[:errors]
     else
+      # FIXME: if full is false, e.length should always be 1 (or 2 if strict)
       local_errors = local_errors.min_by{|e| e[:errors].length }[:errors]
     end
 
