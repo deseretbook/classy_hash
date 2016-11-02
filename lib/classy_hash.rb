@@ -289,14 +289,11 @@ module ClassyHash
     # Optimize the common case of a direct class match
     return true if constraints.include?(value.class)
 
-    # Accumulate all errors if full, just the last constraint's errors if not
     local_errors = []
-    constraint_errors = full ? [] : local_errors
-
     constraints.each do |c|
       next if c == :optional
 
-      constraint_errors.clear
+      constraint_errors = []
 
       # Only need one match to accept the value, so return if one is found
       return true if self.validate(
@@ -311,7 +308,18 @@ module ClassyHash
         errors: constraint_errors
       )
 
-      local_errors.concat(constraint_errors) if full
+      local_errors << constraint_errors
+    end
+
+    # Accumulate all errors if full, just the constraint with the fewest errors
+    # if not (FIXME: sometimes the appropriate constraint will produce more
+    # errors, so maybe comparing just keysets would be more appropriate)
+    if errors
+      if full
+        local_errors.flatten!
+      else
+        local_errors = local_errors.min_by{|e| e.length }
+      end
     end
 
     errors.concat(local_errors) if errors
