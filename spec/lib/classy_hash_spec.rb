@@ -41,6 +41,56 @@ describe ClassyHash do
       ],
     },
     {
+      name: 'multiple choice',
+
+      # Note: This is not the best way to structure multiple-choice schemas
+      schema: {
+        requests: [[
+          {
+            data: {
+              field1: [String, Integer],
+              field2: Integer,
+              field3: [Integer, String]
+            },
+          },
+          {
+            data: {
+              field1: String,
+              field2: Integer,
+              field3: Float,
+            },
+          },
+        ]],
+      },
+
+      good: [
+        { requests: [] },
+        { requests: [
+          { data: { field1: 1, field2: 2, field3: 'Three' } },
+          { data: { field1: 'One', field2: 2, field3: 3.0 } },
+        ] },
+      ],
+
+      # These bad schema tests are insufficiently specific and a bit fragile
+      bad: [
+        [
+          %r{^:requests\[0\]\[:data\](\[:field1\] is not a/an String|\[:field3\] is not.*one of a/an Integer, a/an String)},
+          { requests: [ { data: { field1: 1, field2: 2, field3: 3.0 } } ] },
+        ],
+        [
+          %r{^:requests\[0\]\[:data\]\[:field2\] is not a/an Integer},
+          { requests: [ { data: { field1: 'One', field2: 2.0, field3: 'Z' } } ] },
+        ],
+        [
+          %r{^:requests\[1\]\[:data\]\[:field3\] is not.*one of a/an Integer, a/an String},
+          { requests: [
+            { data: { field1: 'One', field2: 2, field3: 'Three' } },
+            { data: { field1: 1, field2: 2, field3: nil } },
+          ] },
+        ],
+      ],
+    },
+    {
       name: 'complex',
 
       schema: {

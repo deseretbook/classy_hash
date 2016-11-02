@@ -308,18 +308,43 @@ module ClassyHash
         errors: constraint_errors
       )
 
-      local_errors << constraint_errors
+      local_errors << { constraint: c, errors: constraint_errors }
     end
 
-    # Accumulate all errors if full, just the constraint with the fewest errors
-    # if not (FIXME: sometimes the appropriate constraint will produce more
-    # errors, so maybe comparing just keysets would be more appropriate)
-    if errors
-      if full
-        local_errors.flatten!
-      else
-        local_errors = local_errors.min_by{|e| e.length }
-      end
+    # Accumulate all errors if full, the constraint with the most similar keys
+    # and fewest errors if a Hash or Array, or just the constraint with the
+    # fewest errors otherwise.  This doesn't always choose the intended
+    # constraint for error reporting, which would require a more complex
+    # algorithm.
+    #
+    # See https://github.com/deseretbook/classy_hash/pull/16#issuecomment-257484267
+    if full
+      local_errors.map!{|e| e[:errors] }
+      local_errors.flatten!
+    elsif value.is_a?(Hash)
+      # Prefer error messages from similar-looking hash constraints for hashes
+      local_errors = local_errors.min_by{|err|
+        c = err[:constraint]
+        e = err[:errors]
+
+        if c.is_a?(Hash)
+          keydiff = (c.keys | value.keys) - (c.keys & value.keys)
+          [ keydiff.length, e.length ]
+        else
+          [ 1<<30, e.length ] # Put non-hashes after hashes
+        end
+      }[:errors]
+    elsif value.is_a?(Array)
+      # Prefer error messages from array constraints for arrays
+      local_errors = local_errors.min_by{|err|
+        c = err[:constraint]
+        [
+          c.is_a?(Array) ? (c.first.is_a?(Array) ? 0 : 1) : 2,
+          err[:errors].length
+        ]
+      }[:errors]
+    else
+      local_errors = local_errors.min_by{|e| e[:errors].length }[:errors]
     end
 
     errors.concat(local_errors) if errors
