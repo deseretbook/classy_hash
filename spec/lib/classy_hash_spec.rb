@@ -834,6 +834,19 @@ describe ClassyHash do
       expect{ ClassyHash.validate({nil => {nil => 3}}, {nil => {nil => String}}) }.to raise_error(/nil\[nil\] .*String/)
     end
 
+    it 'does not collect all errors by default' do
+      schema = { a: String, b: String }
+      ex = begin
+             ClassyHash.validate({ a: 1, b: 1 }, schema)
+           rescue => e
+             e
+           end
+
+      expect(ex.message).to match(/:a/)
+      expect(ex.message).not_to match(/:b/)
+      expect(ex.entries.length).to eq(1)
+    end
+
     context 'schema is empty' do
       it 'accepts all hashes' do
         expect{ ClassyHash.validate({}, {}) }.not_to raise_error
@@ -860,11 +873,31 @@ describe ClassyHash do
     end
   end
 
-  describe 'validate(full: true)' do
+  describe '.validate(raise_errors: false)' do
+    it 'returns true for valid hashes' do
+      expect(ClassyHash.validate({ a: 1 }, { a: Integer }, raise_errors: false)).to eq(true)
+    end
+
+    it 'returns false for invalid hashes' do
+      expect(ClassyHash.validate({ a: 1.0 }, { a: Integer }, raise_errors: false)).to eq(false)
+    end
+
+    it 'does not collect all errors by default' do
+      schema = { a: String, b: String }
+      hash = { a: 1, b: 2 }
+      errors = []
+      expect(ClassyHash.validate(hash, schema, raise_errors: false, errors: errors)).to eq(false)
+      expect(errors.length).to eq(1)
+      expect(errors.inspect).to match(/:a/)
+      expect(errors.inspect).not_to match(/:b/)
+    end
+  end
+
+  describe '.validate(full: true)' do
     it 'collects all errors' do
       schema = {a: String, b: { c: String }}
-      expect{ ClassyHash.validate({a: 1, b: {} }, schema, full: true) }.to raise_error(%r{:a is not a\/an String, :b\[:c\] is not present})
-      expect{ ClassyHash.validate({a: 'hey', b: { c: 'hello' }}, schema, full: true) }.not_to raise_error
+      expect{ ClassyHash.validate({ a: 1, b: {} }, schema, full: true) }.to raise_error(%r{:a is not a\/an String, :b\[:c\] is not present})
+      expect{ ClassyHash.validate({ a: 'hey', b: { c: 'hello' } }, schema, full: true) }.not_to raise_error
     end
 
     it 'can store errors in an external array for application handling' do
@@ -874,6 +907,19 @@ describe ClassyHash do
                           raise_errors: false, full: true, errors: entries)
 
       expect(entries).to eq [
+        { full_path: ':a', message: 'a/an String' },
+        { full_path: ':b[:c]', message: 'present' }
+      ]
+    end
+
+    it 'stores errors in an array on the exception object' do
+      ex = begin
+             ClassyHash.validate({a: 1, b: {} }, {a: String, b: { c: String }}, full: true)
+           rescue => e
+             e
+           end
+
+      expect(ex.entries).to eq [
         { full_path: ':a', message: 'a/an String' },
         { full_path: ':b[:c]', message: 'present' }
       ]
