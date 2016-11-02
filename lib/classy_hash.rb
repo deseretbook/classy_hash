@@ -113,7 +113,7 @@ module ClassyHash
           if value.include?(k)
             # TODO: Benchmark how much slower allocating a state object is than
             # passing lots of parameters?
-            self.validate(
+            res = self.validate(
               value[k],
               c,
               strict: strict,
@@ -124,6 +124,7 @@ module ClassyHash
               key: k,
               errors: errors
             )
+            return false unless res || full
           elsif !(c.is_a?(Array) && c.first == :optional)
             add_error(raise_below, errors, parent_path, k, "present", NO_VALUE)
             return false unless full
@@ -248,8 +249,7 @@ module ClassyHash
       end
 
     when :optional
-      # Optional key marker in multiple choice validators
-      return true
+      # Optional key marker in multiple choice validators (do nothing)
 
     else
       # Unknown schema constraint
