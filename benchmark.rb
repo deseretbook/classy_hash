@@ -393,7 +393,7 @@ def show_results(results)
   puts " #{'Serializer'.center(15)} | #{'Validator'.center(24)} | #{'Ops'.center(8)} | #{'Ops/sec'.center(10)} | #{'Alloc/op'.center(10)} | #{'Ops/GC'.center(10)}"
   puts "-#{'-' * 15}-+-#{'-' * 24}-+-#{'-' * 8}-+-#{'-' * 10}-+-#{'-' * 10}-+-#{'-' * 10}"
 
-  results.sort_by{|r| -r[2]}.each do |serializer, validator, total, speed, alloc, gc_count|
+  results.sort_by{|r| -r[3]}.each do |serializer, validator, total, speed, alloc, gc_count|
     puts " #{serializer.to_s.ljust(15)} | #{validator.to_s.ljust(24)} | #{total.to_s.rjust(8)} | " \
       "#{('%.1f' % speed).rjust(10)} | #{('%.1f' % alloc).rjust(10)} | #{('%.1f' % gc_count).rjust(10)}"
   end
