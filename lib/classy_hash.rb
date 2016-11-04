@@ -353,6 +353,7 @@ module ClassyHash
       }[:errors]
     else
       # FIXME: if full is false, e.length should always be 1 (or 2 if strict)
+      # Also, array and multiple-choice errors have lots of room for improvement
       local_errors = local_errors.min_by{|e| e[:errors].length }[:errors]
     end
 
