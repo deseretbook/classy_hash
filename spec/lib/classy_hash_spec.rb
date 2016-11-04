@@ -898,6 +898,12 @@ describe ClassyHash do
       expect(ClassyHash.validate({ a: 1.0 }, { a: Integer }, raise_errors: false)).to eq(false)
     end
 
+    it 'rejects invalid schema elements' do
+      errors = []
+      expect(ClassyHash.validate({a: 1}, {a: :invalid}, raise_errors: false, errors: errors)).to eq(false)
+      expect(errors.inspect).to match(/valid.*constraint/)
+    end
+
     it 'does not collect all errors by default' do
       schema = { a: String, b: String }
       hash = { a: 1, b: 2 }
@@ -914,6 +920,10 @@ describe ClassyHash do
       schema = {a: String, b: { c: String }}
       expect{ ClassyHash.validate({ a: 1, b: {} }, schema, full: true) }.to raise_error(%r{:a is not a\/an String, :b\[:c\] is not present})
       expect{ ClassyHash.validate({ a: 'hey', b: { c: 'hello' } }, schema, full: true) }.not_to raise_error
+    end
+
+    it 'collects all invalid schema elements' do
+      expect{ ClassyHash.validate({a: :a, b: :b}, {a: :invalid, b: :invalid}, full: true) }.to raise_error(/:a.*valid.*constraint.*:b.*valid.*constraint/)
     end
 
     it 'can store errors in an external array for application handling' do

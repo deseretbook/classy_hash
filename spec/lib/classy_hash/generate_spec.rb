@@ -7,6 +7,22 @@ require 'rational'
 require 'bigdecimal'
 
 describe CH::G do
+  context 'full validation' do
+    let(:schema) {
+      { a: CH::G.all(String, 'a'..'z') }
+    }
+
+    describe '.all' do
+      it 'accepts matching values' do
+        expect{ CH.validate({ a: 'a' }, schema, full: true) }.not_to raise_error
+      end
+
+      it 'rejects non-matching values' do
+        expect{ CH.validate({ a: 1 }, schema, full: true) }.to raise_error(/all of.*String/)
+      end
+    end
+  end
+
   describe '.all' do
     let(:schema) {
       {

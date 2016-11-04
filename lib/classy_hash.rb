@@ -263,6 +263,8 @@ module ClassyHash
       return false unless full
     end
 
+    # If full was true, we need to raise here now that all the errors were
+    # gathered.
     if raise_errors && errors && errors.any?
       raise SchemaViolationError, errors
     end
