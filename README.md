@@ -67,14 +67,14 @@ Invalid hashes:
  msgpack         | json_schema_full         |    20000 |     1999.3 |      956.4 |       57.5
 ```
 
-
 ### Examples
 
 A Classy Hash schema can be as simple or as complex as you like.  At the most
 basic level, you list each key your Hash is required to contain, with the
 expected Ruby class of the value.
 
-For more examples, see `benchmark.rb` and `lib/spec/classy_hash_spec.rb`.
+For more examples, see `benchmark.rb` and `lib/spec/classy_hash_spec.rb`.  For
+complete documentation of all parameters, see `lib/classy_hash.rb`.
 
 #### Simple example
 
@@ -99,7 +99,7 @@ hash = {
   key3: false
 }
 
-ClassyHash.validate(hash, schema) # Okay
+ClassyHash.validate(hash, schema) # Returns true
 ```
 
 Here's what happens if we try to validate an invalid Hash:
@@ -111,13 +111,21 @@ hash = {
   key3: 'Also wrong, but not checked'
 }
 
-ClassyHash.validate(hash, schema) # Throws ":key2 is not a/an Integer"
+ClassyHash.validate(hash, schema) # Raises ":key2 is not a/an Integer"
 ```
 
-The `validate` method will raise an exception if validation fails.  Validation
-proceeds until the first invalid value is found, then an error is thrown for
-that value.  Later values are not checked unless you run a full validation with
-`validate_full`.
+The `validate` method will raise an exception if validation fails (this can be
+changed by passing `raise_errors: false`; see below).  Validation proceeds
+until the first invalid value is found, then `ClassyHash::SchemaViolationError`
+is thrown for that value.  Later values are not checked unless you run a full
+validation with `full: true`.
+
+#### Controlling validation
+
+The `ClassyHash.validate` method accepts several named parameters for
+controlling validation.  For complete details, see `lib/classy_hash.rb`.
+
+##### Strict validation
 
 You can pass `strict: true` as a keyword argument to `validate` to raise an
 error if the input hash contains any members not specified in the schema.
@@ -126,12 +134,24 @@ the generated error message (a potential security risk in some settings).  See
 the inline documentation in the source code for more details.  As of version
 0.2.0, all nested schemas will also be checked for unexpected members.
 
+Example:
 
-#### Full validation
+```ruby
+# Raises "Top level is not valid: contains members not specified in schema"
+ClassyHash.validate({a: 1, b: 2}, {c: Integer}, strict: true)
 
-If you'd like to capture *all* errors, you can use `validate_full`. If you don't
-pass a block, `validate_full` will simply raise an error that includes all the
-violations in the message:
+# Raises "Top level is not valid: contains members :a, :b not specified in schema"
+ClassyHash.validate({a: 1, b: 2}, {c: Integer}, strict: true, verbose: true)
+
+# Raises ":a is not valid: contains members :b, :c not specified in schema"
+ClassyHash.validate({a: {b: 1, c: 2}}, {a: {a: Integer}}, strict: true, verbose: true)
+```
+
+##### Full validation
+
+If you'd like to capture *all* errors, you can pass `full: true`. If you don't
+also pass `raise_errors: false`, full validation will simply raise an error
+that includes all the violations in the message:
 
 ```ruby
 schema = {
@@ -146,23 +166,39 @@ hash = {
   key3: 'Also wrong'
 }
 
-ClassyHash.validate(hash, schema) # Throws ":key2 is not a/an Integer, :key3 is not a/an TrueClass"
+begin
+  ClassyHash.validate(hash, schema, full: true) # Raises ":key2 is not a/an Integer, :key3 is not true or false"
+rescue => e
+  puts e.message
+
+  # Individual errors are in the .entries array from the exception, just like
+  # the :errors option described below.
+  puts e.entries.inspect
+end
 ```
 
-However, if you pass a block, your application code can actually handle the
-validation errors:
+##### Errors array, exceptionless validation
+
+If you pass an empty array into `:errors`, your application code can handle the
+validation errors directly.  If you pass `raise_errors: false`, `.validate`
+will return `false` for failed validations.  Only the first error will be added
+to the `:errors` array, unless you pass `full: true`.  These options can be
+used independently.
 
 ```ruby
+# Using schema and hash from the previous example
+
 errors = []
+ClassyHash.validate(hash, schema, errors: errors, raise_errors: false, full: true) # Returns false
 
-ClassyHash.validate(hash, schema) do |error_hash|
-  errors << "#{error_hash[:full_path]}: #{error_hash[:message]}"
-end
-
-# Now, errors is [":key2: a/an Integer", ":key3: a/an TrueClass"]
+# Now, errors is [{full_path: ":key2", message: "a/an Integer"}, {full_path: ":key3", message: "true or false"}]
 ```
 
-#### Multiple choice
+Whether you use exceptions or a `false` return (with or without an `:errors`
+array) is up to your preferences.  Note that if you use `raise_errors: false`,
+there is no way to obtain error messages without passing an `:errors` array.
+
+#### Multiple choice constraints
 
 It's possible to specify more than one option for a key, allowing multiple
 types and/or `nil` to be used as the value for a key:
@@ -172,12 +208,11 @@ schema = {
   key1: [ NilClass, String, FalseClass ]
 }
 
-ClassyHash.validate({ key1: nil }, schema) # Okay
-ClassyHash.validate({ key1: 'Hi' }, schema) # Okay
-ClassyHash.validate({ key1: true }, schema) # Okay
-ClassyHash.validate({ key1: 1337 }, schema) # Throws ":key1 is not one of NilClass, String, FalseClass"
+ClassyHash.validate({ key1: nil }, schema) # Returns true
+ClassyHash.validate({ key1: 'Hi' }, schema) # Returns true
+ClassyHash.validate({ key1: true }, schema) # Returns true
+ClassyHash.validate({ key1: 1337 }, schema) # Raises ":key1 is not one of a/an NilClass, a/an String, true or false"
 ```
-
 
 #### Optional keys
 
@@ -189,7 +224,7 @@ schema = {
   key1: TrueClass
 }
 
-ClassyHash.validate({}, schema) # Throws ":key1 is not present"
+ClassyHash.validate({}, schema) # Raises ":key1 is not present"
 ```
 
 If we want to allow a key to be omitted, we can mark it as optional by adding
@@ -200,7 +235,7 @@ schema = {
   key1: [:optional, TrueClass]
 }
 
-ClassyHash.validate({}, schema) # Doesn't throw
+ClassyHash.validate({}, schema) # Returns true
 ```
 
 #### Regular expressions
@@ -213,9 +248,9 @@ schema = {
   key1: /Re.*quired/i
 }
 
-ClassyHash.validate({ key1: /required/ }, schema) # Throws ":key1 is not a String matching /re.*quired/i"
-ClassyHash.validate({ key1: 'invalid' }, schema) # Throws ":key1 is not a String matching /re.*quired/i"
-ClassyHash.validate({ key1: 'The regional manager inquired about ClassyHash' }, schema) # Okay
+ClassyHash.validate({ key1: /required/ }, schema) # Raises ":key1 is not a String matching /Re.*quired/i"
+ClassyHash.validate({ key1: 'invalid' }, schema) # Raises ":key1 is not a String matching /Re.*quired/i"
+ClassyHash.validate({ key1: 'The regional manager inquired about ClassyHash' }, schema) # Returns true
 ```
 
 As with Ruby's `=~` operator, `Regexp`s can match anywhere in the `String`.  To
@@ -227,11 +262,11 @@ schema = {
   key1: /\AStart.*end\z/
 }
 
-ClassyHash.validate({ key1: 'One must Start to end' }, schema) # Throws ":key1 is not a String matching /\\AStart.*end\\z/"
-ClassyHash.validate({ key1: 'Start now, continue to the end' }, schema) # Okay
+ClassyHash.validate({ key1: 'One must Start to end' }, schema) # Raises ":key1 is not a String matching /\\AStart.*end\\z/"
+ClassyHash.validate({ key1: 'Start now, continue to the end' }, schema) # Returns true
 ```
 
-#### Ranges and lambdas
+#### Ranges
 
 If you want to check more than just the type of a value, you can specify a
 `Range` as a constraint.  If your `Range` endpoints are `Integer`s, `Numeric`s,
@@ -244,9 +279,9 @@ schema = {
   key1: 1..10
 }
 
-ClassyHash.validate({ key1: 5 }, schema) # Okay
-ClassyHash.validate({ key1: -5 }, schema) # Throws ":key1 is not in range 1..10"
-ClassyHash.validate({ key1: 2.5 }, schema) # Throws ":key1 is not an Integer"
+ClassyHash.validate({ key1: 5 }, schema) # Returns true
+ClassyHash.validate({ key1: -5 }, schema) # Raises ":key1 is not an Integer in range 1..10"
+ClassyHash.validate({ key1: 2.5 }, schema) # Raises ":key1 is not an Integer in range 1..10"
 ```
 
 ```ruby
@@ -255,8 +290,8 @@ schema = {
   key1: [1]..[5]
 }
 
-ClassyHash.validate({ key1: [2, 3, 4] }, schema) # Okay
-ClassyHash.validate({ key1: [5, 0] }, schema) # Throws ":key1 is not in range [1]..[5]"
+ClassyHash.validate({ key1: [2, 3, 4] }, schema) # Returns true
+ClassyHash.validate({ key1: [5, 0] }, schema) # Raises ":key1 is not in range [1]..[5]"
 ```
 
 #### Procs
@@ -271,21 +306,21 @@ message.
 ```ruby
 # A lambda without an error message
 schema = {
-  key1: lambda {|v| v.is_a?(Integer) && v.odd?}
+  key1: ->(v){ v.is_a?(Integer) && v.odd? }
 }
 
-ClassyHash.validate({ key1: 1 }, schema) # Okay
-ClassyHash.validate({ key1: 2 }, schema) # Throws ":key1 is not accepted by Proc"
+ClassyHash.validate({ key1: 1 }, schema) # Returns true
+ClassyHash.validate({ key1: 2 }, schema) # Raises ":key1 is not accepted by Proc"
 ```
 
 ```ruby
 # A lambda with an error message
 schema = {
-  key1: lambda {|v| (v.is_a?(Integer) && v.odd?) || 'an odd integer'}
+  key1: ->(v){ (v.is_a?(Integer) && v.odd?) || 'an odd integer' }
 }
 
-ClassyHash.validate({ key1: 1 }, schema) # Okay
-ClassyHash.validate({ key1: 2 }, schema) # Throws ":key1 is not an odd integer"
+ClassyHash.validate({ key1: 1 }, schema) # Returns true
+ClassyHash.validate({ key1: 2 }, schema) # Raises ":key1 is not an odd integer"
 ```
 
 #### Sets
@@ -300,9 +335,9 @@ schema = {
   key1: Set.new([1, 2, 3, 'see?'])
 }
 
-ClassyHash.validate({ key1: 1 }, schema) # Okay
-ClassyHash.validate({ key1: 'see?' }, schema) # Okay
-ClassyHash.validate({ key1: 4 }, schema) # Throws ":key1 is not an element of [1, 2, 3, 'see?']"
+ClassyHash.validate({ key1: 1 }, schema) # Returns true
+ClassyHash.validate({ key1: 'see?' }, schema) # Returns true
+ClassyHash.validate({ key1: 4 }, schema) # Raises ':key1 is not an element of [1, 2, 3, "see?"]'
 ```
 
 #### Nested schemas
@@ -340,11 +375,45 @@ hash4 = {
   key2: { n1: { y: false } }
 }
 
-ClassyHash.validate(hash1, schema) # Okay
-ClassyHash.validate(hash2, schema) # Okay
-ClassyHash.validate(hash3, schema) # Throws ":key1[:msg] is not a/an String"
-ClassyHash.validate(hash4, schema) # Throws ":key2[:n1][:y] is not a/an Numeric"
-ClassyHash.validate({ key1: false }, schema) # Throws ":key1 is not a Hash"
+ClassyHash.validate(hash1, schema) # Returns true
+ClassyHash.validate(hash2, schema) # Returns true
+ClassyHash.validate(hash3, schema) # Raises ":key1[:msg] is not a/an String"
+ClassyHash.validate(hash4, schema) # Raises ":key2[:n1][:y] is not a/an Numeric, :key2[:n1] is not one of a/an Integer, a Hash matching {schema with keys [:y]}"
+ClassyHash.validate({ key1: false }, schema) # Raises ":key1 is not a Hash matching {schema with keys [:msg]}"
+```
+
+Complex nested multiple choice constraints can lead to confusing error
+messages, slower performance, and increased memory consumption.  For best
+results, try to push multiple choice options as deep into the schema as
+possible, or use your own code to decide which schema to pass to ClassyHash.
+For example:
+
+```ruby
+hash = { data: { key: 1.0 }}
+
+# Not recommended (confusing errors, slower validation)
+bad_schema = {
+  data: [ { key: String }, { key: Integer } ]
+}
+# Raises :data[:key] is not a/an String, :data is not one of a Hash matching {schema with keys [:key]}, a Hash matching {schema with keys [:key]}
+CH.validate(hash, bad_schema)
+
+# Recommended
+good_schema = {
+  data: { key: [ String, Integer ] }
+}
+# Raises :data[:key] is not a/an String, :data[:key] is not one of a/an String, a/an Integer
+CH.validate(hash, good_schema)
+
+# Alternative
+schema1 = {
+  data: { key: String }
+}
+schema2 = {
+  data: { key: Integer }
+}
+# Raises ":data[:key] is not a/an Integer" or ":data[:key] is not a/an String"
+CH.validate(hash, api_v2 ? schema2 : schema1)
 ```
 
 #### Arrays
@@ -354,16 +423,20 @@ are specified by double-array-wrapping a multiple choice list.  Array
 constraints can also themselves be part of a multiple choice list or array
 constraint.  Empty arrays are always accepted by array constraints.
 
+If the error messages are too verbose, you can pass in an `:errors` array or
+retrieve the first entry from the exception's `.entries`.  Typically the first
+entry will be the most useful, but this is not guaranteed.
+
 ```ruby
 # Simple array of integers
 schema = {
   key1: [[Integer]]
 }
 
-ClassyHash.validate({ key1: [] }, schema) # Okay
-ClassyHash.validate({ key1: [1, 2, 3, 4, 5] }, schema) # Okay
-ClassyHash.validate({ key1: [1, 2, 3, 0.5] }, schema) # Throws ":key1[3] is not one of Integer"
-ClassyHash.validate({ key1: false }, schema) # Throws ":key1 is not an Array"
+ClassyHash.validate({ key1: [] }, schema) # Returns true
+ClassyHash.validate({ key1: [1, 2, 3, 4, 5] }, schema) # Returns true
+ClassyHash.validate({ key1: [1, 2, 3, 0.5] }, schema) # Raises ":key1[3] is not a/an Integer, :key1[3] is not one of a/an Integer"
+ClassyHash.validate({ key1: false }, schema) # Raises ":key1 is not an Array of one of a/an Integer"
 ```
 
 ```ruby
@@ -372,19 +445,27 @@ schema = {
   key1: [Integer, [[ [[ String ]] ]]]
 }
 
-ClassyHash.validate({ key1: 1 }, schema) # Okay
-ClassyHash.validate({ key1: [ [], ['a'], ['b', 'c'] ] }, schema) # Okay
-ClassyHash.validate({ key1: ['bad'] }, schema) # Throws ":key1[0] is not one of [[String]]"
-ClassyHash.validate({ key1: [ [], ['a'], ['b', false] ] }, schema) # Throws ":key1[2][1] is not one of String"
+ClassyHash.validate({ key1: 1 }, schema) # Returns true
+ClassyHash.validate({ key1: [ [], ['a'], ['b', 'c'] ] }, schema) # Returns true
+
+# Raises :key1[0] is not an Array of one of a/an String, :key1[0] is not an
+# Array of an Array of one of a/an String, :key1 is not one of a/an Integer, an
+# Array of an Array of an Array of one of a/an String
+ClassyHash.validate({ key1: ['bad'] }, schema)
+
+# Raises :key1[2][1] is not a/an String, :key1[2][1] is not one of a/an String,
+# :key1[2] is not an Array of an Array of one of a/an String, :key1 is not one
+# of a/an Integer, an Array of an Array of an Array of one of a/an String
+ClassyHash.validate({ key1: [ [], ['a'], ['b', false] ] }, schema)
 ```
 
-If you want to check the length of an array, you can use a `Proc` (also see the
-Generators section below):
+If you want to check the length of an array, you can use a `Proc` (also see
+`CH::G.array_length` in the Generators section below):
 
 ```ruby
 # An array of two integers
 schema = {
-  key1: lambda {|v|
+  key1: ->(v){
     if v.is_a?(Array) && v.length == 2
       begin
         ClassyHash.validate({k: v}, {k: [[Integer]]})
@@ -398,9 +479,9 @@ schema = {
   }
 }
 
-ClassyHash.validate({ key1: [1, 2] }, schema) # Okay
-ClassyHash.validate({ key1: [1, false] }, schema) # Throws ":key1 is not valid: :k[1] is not one of Integer"
-ClassyHash.validate({ key1: [1] }, schema) # Throws ":key1 is not an array of length 2"
+ClassyHash.validate({ key1: [1, 2] }, schema) # Returns true
+ClassyHash.validate({ key1: [1, false] }, schema) # Raises ":key1 is not valid: :k[1] is not one of a/an Integer"
+ClassyHash.validate({ key1: [1] }, schema) # Raises ":key1 is not an array of length 2"
 ```
 
 #### Generators
@@ -424,8 +505,8 @@ The `.all` generator requires all constraints to pass.
 schema = {
   key1: CH::G.all(Integer, 1.0..100.0)
 }
-ClassyHash.validate({ key1: 5 }, schema) # Okay
-ClassyHash.validate({ key1: BigDecimal.new(5) }, schema) # Raises ":key1 is not all of [Integer, 1.0..100.0]"
+ClassyHash.validate({ key1: 5 }, schema) # Returns true
+ClassyHash.validate({ key1: BigDecimal.new(5) }, schema) # Raises ":key1 is not all of [one of a/an Integer, a Numeric in range 1.0..100.0]"
 ```
 
 The `.not` generator requires all constraints to fail.
@@ -434,11 +515,11 @@ The `.not` generator requires all constraints to fail.
 schema = {
   key1: CH::G.not(Rational, BigDecimal, 'a'..'c', 10..15)
 }
-ClassyHash.validate({ key1: 5 }, schema) # Okay
-ClassyHash.validate({ key1: 10 }, schema) # Raises ":key1 is not none of [Rational, BigDecimal, "a".."c", 10..15]"
-ClassyHash.validate({ key1: Rational(3, 5) }, schema) # Raises ":key1 is not none of [Rational, BigDecimal, "a".."c", 10..15]"
-ClassyHash.validate({ key1: 'Good' }, schema) # Okay
-ClassyHash.validate({ key1: 'broken' }, schema) # Raises ":key1 is not none of [Rational, BigDecimal, "a".."c", 10..15]"
+ClassyHash.validate({ key1: 5 }, schema) # Returns true
+ClassyHash.validate({ key1: 10 }, schema) # Raises ':key1 is not none of [one of a/an Rational, a/an BigDecimal, a String in range "a".."c", an Integer in range 10..15]'
+ClassyHash.validate({ key1: Rational(3, 5) }, schema) # Raises ':key1 is not none of [one of a/an Rational, a/an BigDecimal, a String in range "a".."c", an Integer in range 10..15]'
+ClassyHash.validate({ key1: 'Good' }, schema) # Returns true
+ClassyHash.validate({ key1: 'broken' }, schema) # Raises ':key1 is not none of [one of a/an Rational, a/an BigDecimal, a String in range "a".."c", an Integer in range 10..15]'
 ```
 
 The `.all` and `.not` generators become more useful when combined:
@@ -450,16 +531,15 @@ schema = {
   # Integer values for Integer ranges; this is important for .not().
   key1: CH::G.all(Integer, 1.0..100.0, CH::G.not(10.0..20.0))
 }
-ClassyHash.validate({ key1: 9 }, schema) # Okay
-ClassyHash.validate({ key1: 10 }, schema) # Raises :key1 is not all of [Integer, 1.0..100.0, none of [10.0..20.0]]
-ClassyHash.validate({ key1: 25.0 }, schema) # Raises :key1 is not all of [Integer, 1.0..100.0, none of [10.0..20.0]]
+ClassyHash.validate({ key1: 9 }, schema) # Returns true
+ClassyHash.validate({ key1: 10 }, schema) # Raises :key1 is not all of [one of a/an Integer, a Numeric in range 1.0..100.0, none of [one of a Numeric in range 10.0..20.0]]
+ClassyHash.validate({ key1: 25.0 }, schema) # Raises :key1 is not all of [one of a/an Integer, a Numeric in range 1.0..100.0, none of [one of a Numeric in range 10.0..20.0]]
 ```
 
 Note that `.not` may accept a value for reasons you don't expect, since
 its parameters are treated as ordinary ClassyHash constraints, and only
 requires that its constraints raise some kind of error.  For example,
 `CH::G.not(5..10)` will allow `6.0` but not `6`.
-
 
 ##### Enumeration
 
@@ -472,8 +552,8 @@ schema = {
   key1: CH::G.enum(1, 2, 3, 4)
 }
 
-ClassyHash.validate({ key1: 1 }, schema) # Okay
-ClassyHash.validate({ key1: -1 }, schema) # Throws ":key1 is not an element of [1, 2, 3, 4]"
+ClassyHash.validate({ key1: 1 }, schema) # Returns true
+ClassyHash.validate({ key1: -1 }, schema) # Raises ":key1 is not an element of [1, 2, 3, 4]"
 ```
 
 ##### Arbitrary length
@@ -488,10 +568,10 @@ schema = {
   key1: CH::G.length(5..6)
 }
 
-ClassyHash.validate({ key1: '123456' }, schema) # Okay
-ClassyHash.validate({ key1: {a: 1, b: 2, c: 3, d: 4, e: 5} }, schema) # Okay
-ClassyHash.validate({ key1: [1, 2] }, schema) # Throws ":key1 is not of length 5..6"
-ClassyHash.validate({ key1: 5 }, schema) # Throws ":key1 is not a type that responds to :length"
+ClassyHash.validate({ key1: '123456' }, schema) # Returns true
+ClassyHash.validate({ key1: {a: 1, b: 2, c: 3, d: 4, e: 5} }, schema) # Returns true
+ClassyHash.validate({ key1: [1, 2] }, schema) # Raises ":key1 is not of length 5..6"
+ClassyHash.validate({ key1: 5 }, schema) # Raises ":key1 is not a type that responds to :length"
 ```
 
 ##### String or Array length
@@ -506,9 +586,9 @@ schema = {
   key1: CH::G.string_length(0..15)
 }
 
-ClassyHash.validate({ key1: 'x' * 15 }, schema) # Okay
-ClassyHash.validate({ key1: 'x' * 16 }, schema) # Throws ":key1 is not a String of length 0..15"
-ClassyHash.validate({ key1: false }, schema) # Throws ":key1 is not a String of length 0..15"
+ClassyHash.validate({ key1: 'x' * 15 }, schema) # Returns true
+ClassyHash.validate({ key1: 'x' * 16 }, schema) # Raises ":key1 is not a String of length 0..15"
+ClassyHash.validate({ key1: false }, schema) # Raises ":key1 is not a String of length 0..15"
 ```
 
 The `Array` length constraint generator also checks the values of the array.
@@ -519,9 +599,9 @@ schema = {
   key1: CH::G.array_length(4, Integer, String)
 }
 
-ClassyHash.validate({ key1: [1, 'two', 3, 4] }, schema) # Okay
-ClassyHash.validate({ key1: [1, 2, false, 4] }, schema) # Throws ":key1 is not valid: :array[2] is not one of Integer, String"
-ClassyHash.validate({ key1: false }, schema) # Throws ":key1 is not an Array of length 4"
+ClassyHash.validate({ key1: [1, 'two', 3, 4] }, schema) # Returns true
+ClassyHash.validate({ key1: [1, 2, false, 4] }, schema) # Raises ":key1 is not valid: :array[2] is not a/an Integer, :array[2] is not one of a/an Integer, a/an String"
+ClassyHash.validate({ key1: false }, schema) # Raises ":key1 is not an Array of length 4"
 ```
 
 #### A practical example (user and address)
@@ -547,7 +627,7 @@ address_schema = {
 user_schema = {
   id: Integer,
   name: String,
-  email: lambda {|v| (v.is_a?(String) && v.include?('@')) || 'an e-mail address'},
+  email: ->(v){ (v.is_a?(String) && v.include?('@')) || 'an e-mail address' },
   addresses: [[ address_schema ]]
 }
 
@@ -574,10 +654,13 @@ data = <<JSON
 }
 JSON
 
-# ClassyHash#validate(..., strict: true) raises an error if the Hash contains
-# any keys not specified by the schema.
-ClassyHash.validate({ :extra_key => 0 }, user_schema, strict: true) # Throws "Top level contains members not specified in schema"
-ClassyHash.validate(JSON.parse(data, symbolize_names: true), user_schema, strict: true) # Throws ":addresses[1][:city] is not a/an String
+# Raises "Top level is not valid: contains members not specified in schema"
+ClassyHash.validate({ :extra_key => 0 }, user_schema, strict: true)
+
+# Raises :addresses[1][:city] is not a/an String, :addresses[1] is not one of a
+# Hash matching {schema with keys [:street1, :street2, :city, :state, :country,
+# :postcode]}
+ClassyHash.validate(JSON.parse(data, symbolize_names: true), user_schema, strict: true)
 ```
 
 ### Testing
@@ -594,7 +677,7 @@ rspec
 
 Classy Hash was written by Mike Bourgeous for API validation and documentation
 in internal DeseretBook.com systems, and subsequently enhanced by inside and
-outside contributors.  See the git history for details.
+outside contributors.  See the Git history for details.
 
 ### Alternatives
 
