@@ -29,42 +29,41 @@ to use just about anywhere.
 
 Classy Hash is thoroughly tested (see the **Testing** section below).
 
-Finally, Classy Hash is blazingly fast:
+Finally, Classy Hash is fast:
 
 ```
 Valid hashes:
 
    Serializer    |        Validator         |   Ops    |  Ops/sec   |  Alloc/op  |   Ops/GC  
 -----------------+--------------------------+----------+------------+------------+-----------
- msgpack         | no_op                    |   200000 |   136844.4 |       28.0 |     1851.9
- msgpack         | classy_hash              |   200000 |    72862.9 |       31.0 |     1680.7
- msgpack         | classy_hash_strict       |   200000 |    59403.4 |       43.0 |     1234.6
- msgpack         | classy_hash_full         |   200000 |    73053.2 |       32.0 |     1639.3
- msgpack         | classy_hash_full_strict  |   200000 |    59777.6 |       44.0 |     1204.8
- msgpack         | classy_hash_no_raise     |   200000 |    73323.0 |       32.0 |     1639.3
- msgpack         | classy_hash_errors_array |   200000 |    73408.9 |       31.0 |     1680.7
- msgpack         | hash_validator           |   100000 |    33874.8 |       73.0 |      740.7
- msgpack         | schema_hash              |    50000 |    27407.0 |      118.0 |      450.5
- msgpack         | json_schema              |     8000 |     1884.7 |     1004.0 |       55.2
- msgpack         | json_schema_strict       |     8000 |     1862.1 |     1013.0 |       54.4
- msgpack         | json_schema_full         |     8000 |     1816.9 |     1013.0 |       54.4
-
+ msgpack         | no_op                    |   200000 |   109200.1 |       28.0 |     1886.8
+ msgpack         | classy_hash_no_raise     |   200000 |    45786.7 |       32.0 |     1666.7
+ msgpack         | classy_hash_full         |   200000 |    45744.4 |       32.0 |     1666.7
+ msgpack         | classy_hash_errors_array |   200000 |    45577.6 |       31.0 |     1724.1
+ msgpack         | classy_hash              |   200000 |    45421.5 |       31.0 |     1724.1
+ msgpack         | classy_hash_strict       |   200000 |    37348.8 |       43.0 |     1257.9
+ msgpack         | classy_hash_full_strict  |   200000 |    37024.5 |       44.0 |     1234.6
+ msgpack         | hash_validator           |   100000 |    22241.5 |       73.0 |      757.6
+ msgpack         | schema_hash              |    50000 |    18942.2 |      118.0 |      463.0
+ msgpack         | json_schema              |     8000 |     1207.1 |     1000.1 |       56.3
+ msgpack         | json_schema_strict       |     8000 |     1195.6 |     1009.0 |       55.9
+ msgpack         | json_schema_full         |     8000 |     1189.5 |     1013.0 |       55.6
 
 
 Invalid hashes:
 
    Serializer    |        Validator         |   Ops    |  Ops/sec   |  Alloc/op  |   Ops/GC  
 -----------------+--------------------------+----------+------------+------------+-----------
- msgpack         | classy_hash              |   500000 |    95680.0 |       28.2 |     1824.8
- msgpack         | classy_hash_strict       |   500000 |    80178.6 |       33.8 |     1543.2
- msgpack         | classy_hash_full         |   500000 |    70504.0 |       35.4 |     1474.9
- msgpack         | classy_hash_full_strict  |   500000 |    61334.0 |       41.0 |     1282.1
- msgpack         | classy_hash_no_raise     |   500000 |    70819.8 |       36.4 |     1436.8
- msgpack         | classy_hash_errors_array |   500000 |    40301.7 |       55.4 |      914.1
- msgpack         | hash_validator           |   250000 |    33720.2 |       69.0 |      778.8
- msgpack         | json_schema              |    20000 |     2153.3 |      894.6 |       61.5
- msgpack         | json_schema_strict       |    20000 |     2177.4 |      890.4 |       61.7
- msgpack         | json_schema_full         |    20000 |     1999.3 |      956.4 |       57.5
+ msgpack         | classy_hash              |   500000 |    55524.3 |       28.2 |     1865.7
+ msgpack         | classy_hash_no_raise     |   500000 |    54028.7 |       30.6 |     1730.1
+ msgpack         | classy_hash_strict       |   500000 |    45824.1 |       33.8 |     1577.3
+ msgpack         | classy_hash_errors_array |   500000 |    40601.2 |       34.6 |     1533.7
+ msgpack         | classy_hash_full         |   500000 |    39895.5 |       35.4 |     1506.0
+ msgpack         | classy_hash_full_strict  |   500000 |    35024.4 |       41.0 |     1312.3
+ msgpack         | hash_validator           |   250000 |    20873.9 |       69.0 |      793.7
+ msgpack         | json_schema_strict       |    20000 |     1399.6 |      887.4 |       63.3
+ msgpack         | json_schema              |    20000 |     1398.0 |      891.6 |       63.1
+ msgpack         | json_schema_full         |    20000 |     1281.2 |      956.4 |       58.8
 ```
 
 ### Examples
