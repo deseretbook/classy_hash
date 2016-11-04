@@ -346,10 +346,23 @@ end
 def do_test(hashes, expect_fail)
   results = []
 
+  ser_enabled = (ENV['SERIALIZERS'] || '').split(/[, ]+/)
+  val_enabled = (ENV['VALIDATORS'] || '').split(/[, ]+/)
+
   SERIALIZERS.each do |ser_name, ser_info|
+    unless ser_enabled.empty? || ser_enabled.include?(ser_name.to_s)
+      puts "Skipping serializer #{ser_name}"
+      next
+    end
+
     puts "Serializing with #{ser_name}"
 
     VALIDATORS.each do |val_name, val_info|
+      unless val_enabled.empty? || val_enabled.include?(val_name.to_s)
+        puts "\tSkipping validator #{val_name}"
+        next
+      end
+
       puts "\tValidating with #{val_name}"
 
       count = BENCHCOUNT / (val_info[:divisor] * ser_info[:divisor])
