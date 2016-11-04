@@ -1,5 +1,6 @@
 # Classy Hash extended validation generators
-# Copyright (C)2014 Deseret Book
+# Copyright (C)2016 Deseret Book and Contributors (see git history)
+# frozen_string_literal: true
 
 module ClassyHash
   # This module contains helpers that generate constraints for common

@@ -32,16 +32,39 @@ Classy Hash is thoroughly tested (see the **Testing** section below).
 Finally, Classy Hash is blazingly fast:
 
 ```
-      Serializer      |      Validator       |  Ops/sec
-----------------------+----------------------+-----------
- msgpack              | no_op                | 123525
- msgpack              | classy_hash          | 67798
- msgpack              | classy_hash_strict   | 59952
- msgpack              | hash_validator       | 27578
- msgpack              | schema_hash          | 22217
- msgpack              | json_schema          | 1255
- msgpack              | json_schema_full     | 1251
- msgpack              | json_schema_strict   | 1086
+Valid hashes:
+
+   Serializer    |        Validator         |   Ops    |  Ops/sec   |  Alloc/op  |   Ops/GC  
+-----------------+--------------------------+----------+------------+------------+-----------
+ msgpack         | no_op                    |   200000 |   136844.4 |       28.0 |     1851.9
+ msgpack         | classy_hash              |   200000 |    72862.9 |       31.0 |     1680.7
+ msgpack         | classy_hash_strict       |   200000 |    59403.4 |       43.0 |     1234.6
+ msgpack         | classy_hash_full         |   200000 |    73053.2 |       32.0 |     1639.3
+ msgpack         | classy_hash_full_strict  |   200000 |    59777.6 |       44.0 |     1204.8
+ msgpack         | classy_hash_no_raise     |   200000 |    73323.0 |       32.0 |     1639.3
+ msgpack         | classy_hash_errors_array |   200000 |    73408.9 |       31.0 |     1680.7
+ msgpack         | hash_validator           |   100000 |    33874.8 |       73.0 |      740.7
+ msgpack         | schema_hash              |    50000 |    27407.0 |      118.0 |      450.5
+ msgpack         | json_schema              |     8000 |     1884.7 |     1004.0 |       55.2
+ msgpack         | json_schema_strict       |     8000 |     1862.1 |     1013.0 |       54.4
+ msgpack         | json_schema_full         |     8000 |     1816.9 |     1013.0 |       54.4
+
+
+
+Invalid hashes:
+
+   Serializer    |        Validator         |   Ops    |  Ops/sec   |  Alloc/op  |   Ops/GC  
+-----------------+--------------------------+----------+------------+------------+-----------
+ msgpack         | classy_hash              |   500000 |    95680.0 |       28.2 |     1824.8
+ msgpack         | classy_hash_strict       |   500000 |    80178.6 |       33.8 |     1543.2
+ msgpack         | classy_hash_full         |   500000 |    70504.0 |       35.4 |     1474.9
+ msgpack         | classy_hash_full_strict  |   500000 |    61334.0 |       41.0 |     1282.1
+ msgpack         | classy_hash_no_raise     |   500000 |    70819.8 |       36.4 |     1436.8
+ msgpack         | classy_hash_errors_array |   500000 |    40301.7 |       55.4 |      914.1
+ msgpack         | hash_validator           |   250000 |    33720.2 |       69.0 |      778.8
+ msgpack         | json_schema              |    20000 |     2153.3 |      894.6 |       61.5
+ msgpack         | json_schema_strict       |    20000 |     2177.4 |      890.4 |       61.7
+ msgpack         | json_schema_full         |    20000 |     1999.3 |      956.4 |       57.5
 ```
 
 
@@ -93,7 +116,8 @@ ClassyHash.validate(hash, schema) # Throws ":key2 is not a/an Integer"
 
 The `validate` method will raise an exception if validation fails.  Validation
 proceeds until the first invalid value is found, then an error is thrown for
-that value.  Later values are not checked.
+that value.  Later values are not checked unless you run a full validation with
+`validate_full`.
 
 You can pass `strict: true` as a keyword argument to `validate` to raise an
 error if the input hash contains any members not specified in the schema.
@@ -102,6 +126,41 @@ the generated error message (a potential security risk in some settings).  See
 the inline documentation in the source code for more details.  As of version
 0.2.0, all nested schemas will also be checked for unexpected members.
 
+
+#### Full validation
+
+If you'd like to capture *all* errors, you can use `validate_full`. If you don't
+pass a block, `validate_full` will simply raise an error that includes all the
+violations in the message:
+
+```ruby
+schema = {
+  key1: String,
+  key2: Integer,
+  key3: TrueClass
+}
+
+hash = {
+  key1: 'A less classy Hash',
+  key2: 1.25,
+  key3: 'Also wrong'
+}
+
+ClassyHash.validate(hash, schema) # Throws ":key2 is not a/an Integer, :key3 is not a/an TrueClass"
+```
+
+However, if you pass a block, your application code can actually handle the
+validation errors:
+
+```ruby
+errors = []
+
+ClassyHash.validate(hash, schema) do |error_hash|
+  errors << "#{error_hash[:full_path]}: #{error_hash[:message]}"
+end
+
+# Now, errors is [":key2: a/an Integer", ":key3: a/an TrueClass"]
+```
 
 #### Multiple choice
 
@@ -118,6 +177,7 @@ ClassyHash.validate({ key1: 'Hi' }, schema) # Okay
 ClassyHash.validate({ key1: true }, schema) # Okay
 ClassyHash.validate({ key1: 1337 }, schema) # Throws ":key1 is not one of NilClass, String, FalseClass"
 ```
+
 
 #### Optional keys
 
@@ -533,7 +593,8 @@ rspec
 ### Who wrote it?
 
 Classy Hash was written by Mike Bourgeous for API validation and documentation
-in internal DeseretBook.com systems.
+in internal DeseretBook.com systems, and subsequently enhanced by inside and
+outside contributors.  See the git history for details.
 
 ### Alternatives
 
@@ -547,4 +608,4 @@ considered before deciding to roll our own:
 ### License
 
 Classy Hash is released under the MIT license (see the `LICENSE` file for the
-license text and copyright notice).
+license text and copyright notice, and the git history for more contributors).
