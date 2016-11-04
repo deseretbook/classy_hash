@@ -391,9 +391,7 @@ module ClassyHash
       if value != NO_VALUE && (result = constraint.call(value)).is_a?(String)
         result
       else
-        # TODO: does Proc#inspect give too much information about source code
-        # layout to an attacker?
-        "accepted by #{constraint.inspect}"
+        "accepted by Proc"
       end
 
     when Range
