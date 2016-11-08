@@ -277,31 +277,9 @@ VALIDATORS = {
   }
 }
 
-# Yields once and returns a hash with GC and elapsed time stats
-def gc_bench
-  asym = :total_allocated_objects
-  csym = :count
-
-  GC.start
-
-  start = Time.now
-  before = GC.stat
-  ba = before[asym]
-  bc = before[:count]
-
-  yield
-
-  after = GC.stat
-  aa = after[asym]
-  ac = after[:count]
-  elapsed = Time.now - start
-
-  { alloc: aa - ba, count: ac - bc, elapsed: elapsed }
-end
-
 # Runs the given block BENCHCOUNT times for each serializer/schema pair.
 # Yields serializer name, serializer, validator name, validator
-def do_test
+def do_test &block
   results = []
 
   SERIALIZERS.each do |ser_name, ser_info|
@@ -319,18 +297,18 @@ def do_test
         validator = val_info[:validator]
 
         response = nil
-        result = gc_bench do
+        result = Benchmark.realtime do
           count.times do
             response = yield ser_name, serializer, val_name, validator
           end
         end
 
-        speed = (count / result[:elapsed]).round
+        speed = (count / result).round
 
-        puts "\t\tResult: #{count} in #{result[:elapsed]}s (#{speed}/s #{result[:alloc]} allocations #{result[:count]} GC runs)"
+        puts "\t\tResult: #{count} in #{result}s (#{speed}/s)"
         puts "\t\tReturned: #{response}" if response
 
-        results << [ser_name, val_name, speed, result[:alloc], result[:count]]
+        results << [ser_name, val_name, speed]
       rescue => e
         puts "\t\tException raised: #{e}\n\t\t#{e.backtrace.first(15).join("\n\t\t")}"
       end
@@ -341,11 +319,11 @@ def do_test
 end
 
 def show_results(results)
-  puts " #{'Serializer'.center(20)} | #{'Validator'.center(20)} | #{'Ops/sec'.center(10)} | #{'Alloc'.center(10)} | #{'GC runs'.center(10)}"
-  puts "-#{'-' * 20}-+-#{'-' * 20}-+-#{'-' * 10}-+-#{'-' * 10}-+-#{'-' * 10}"
+  puts " #{'Serializer'.center(20)} | #{'Validator'.center(20)} | #{'Ops/sec'.center(10)}"
+  puts "-#{'-' * 20}-+-#{'-' * 20}-+-#{'-' * 10}"
 
-  results.sort_by{|r| -r[2]}.each do |serializer, validator, speed, alloc, gc_count|
-    puts " #{serializer.to_s.ljust(20)} | #{validator.to_s.ljust(20)} | #{speed.to_s.rjust(10)} | #{alloc.to_s.rjust(10)} | #{gc_count.to_s.rjust(10)}"
+  results.sort_by{|r| -r.last}.each do |serializer, validator, speed|
+    puts " #{serializer.to_s.ljust(20)} | #{validator.to_s.ljust(20)} | #{speed}"
   end
 
   puts
