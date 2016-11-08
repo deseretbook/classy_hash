@@ -13,23 +13,38 @@ require 'hash_validator'
 $: << File.join(File.dirname(__FILE__), 'lib')
 require 'classy_hash'
 
-good_hash = JSON.parse(<<-JSON, symbolize_names: true)
-{
-  "k1": "Value One",
-  "k2": "Value Two",
-  "k3": -3,
-  "k4": 4.4,
-  "k5": true,
-  "k6": false,
-  "k7": {
-    "n1": "Hi there",
-    "n2": "This is a nested hash",
-    "n3": {
-      "d1": 5
+good_hashes = [
+  {
+    k1: 'Value One',
+    k2: 'Value Two',
+    k3: -3,
+    k4: 4.4,
+    k5: true,
+    k6: false,
+    k7: {
+      n1: 'Hi there',
+      n2: 'This is a nested hash',
+      n3: {
+        d1: 5
+      }
     }
-  }
-}
-JSON
+  },
+  {
+    k1: 'Another Value One',
+    k2: 'Another Value Two',
+    k3: 3,
+    k4: -4,
+    k5: false,
+    k6: true,
+    k7: {
+      n1: 'Hello again',
+      n2: 'This is a second nested hash',
+      n3: {
+        d1: 31.5
+      }
+    }
+  },
+]
 
 bad_hashes = [
   {
@@ -239,9 +254,36 @@ VALIDATORS = {
       ClassyHash.validate_strict(hash, classy_schema)
     }
   },
+  classy_hash_full: {
+    divisor: 1,
+    validator: lambda{|hash|
+      ClassyHash.validate(hash, classy_schema, full: true)
+    }
+  },
+  classy_hash_full_strict: {
+    divisor: 1,
+    validator: lambda{|hash|
+      ClassyHash.validate(hash, classy_schema, strict: true, full: true)
+    }
+  },
+  classy_hash_no_raise: {
+    divisor: 1,
+    validator: lambda{|hash|
+      raise unless ClassyHash.validate(hash, classy_schema, raise_errors: false)
+    }
+  },
+  classy_hash_errors_array: {
+    divisor: 1,
+    validator: lambda{|hash|
+      $ch_errors ||= []
+      $ch_errors.clear
+      ClassyHash.validate(hash, classy_schema, raise_errors: false, errors: $ch_errors)
+      raise $ch_errors.inspect if $ch_errors.any?
+    }
+  },
 
   hash_validator: {
-    divisor: 1,
+    divisor: 2,
     validator: lambda{|hash|
       validator = HashValidator.validate(hash, hash_validator_schema)
       raise validator.errors.to_s unless validator.valid?
@@ -249,7 +291,7 @@ VALIDATORS = {
   },
 
   schema_hash: {
-    divisor: 1,
+    divisor: 4,
     validator: lambda{|hash|
       hash.schema = schema_hash_schema
       raise 'hash invalid' unless hash.valid?
@@ -257,19 +299,19 @@ VALIDATORS = {
   },
 
   json_schema: {
-    divisor: 20,
+    divisor: 25,
     validator: lambda{|hash|
       JSON::Validator.validate!(json_schema_schema, hash)
     }
   },
   json_schema_strict: {
-    divisor: 20,
+    divisor: 25,
     validator: lambda{|hash|
       JSON::Validator.validate!(json_schema_schema, hash, strict: true)
     }
   },
   json_schema_full: {
-    divisor: 20,
+    divisor: 25,
     validator: lambda{|hash|
       a = JSON::Validator.fully_validate(json_schema_schema, hash, strict: true)
       raise a.join("\n\t\t\t") unless a.empty?
@@ -277,15 +319,50 @@ VALIDATORS = {
   }
 }
 
+# Yields once and returns a hash with GC and elapsed time stats
+def gc_bench
+  asym = :total_allocated_objects
+  csym = :count
+
+  GC.start
+
+  start = Time.now
+  before = GC.stat
+  ba = before[asym]
+  bc = before[:count]
+
+  yield
+
+  after = GC.stat
+  aa = after[asym]
+  ac = after[:count]
+  elapsed = Time.now - start
+
+  { alloc: aa - ba, gc: ac - bc, elapsed: elapsed }
+end
+
 # Runs the given block BENCHCOUNT times for each serializer/schema pair.
 # Yields serializer name, serializer, validator name, validator
-def do_test &block
+def do_test(hashes, expect_fail)
   results = []
 
+  ser_enabled = (ENV['SERIALIZERS'] || '').split(/[, ]+/)
+  val_enabled = (ENV['VALIDATORS'] || '').split(/[, ]+/)
+
   SERIALIZERS.each do |ser_name, ser_info|
+    unless ser_enabled.empty? || ser_enabled.include?(ser_name.to_s)
+      puts "Skipping serializer #{ser_name}"
+      next
+    end
+
     puts "Serializing with #{ser_name}"
 
     VALIDATORS.each do |val_name, val_info|
+      unless val_enabled.empty? || val_enabled.include?(val_name.to_s)
+        puts "\tSkipping validator #{val_name}"
+        next
+      end
+
       puts "\tValidating with #{val_name}"
 
       count = BENCHCOUNT / (val_info[:divisor] * ser_info[:divisor])
@@ -297,18 +374,25 @@ def do_test &block
         validator = val_info[:validator]
 
         response = nil
-        result = Benchmark.realtime do
-          count.times do
-            response = yield ser_name, serializer, val_name, validator
+        result = gc_bench do
+          hashes.each do |h|
+            count.times do
+              response = validator.call(serializer.call(h)) rescue $!
+            end
+
+            if expect_fail != response.is_a?(StandardError)
+              raise "Validation should #{expect_fail ? '' : 'not '}have failed for #{h}"
+            end
           end
         end
 
-        speed = (count / result).round
+        total = count * hashes.count
+        speed = total.to_f / result[:elapsed]
 
-        puts "\t\tResult: #{count} in #{result}s (#{speed}/s)"
+        puts "\t\tResult: #{total} in #{result[:elapsed]}s (#{speed}/s #{result[:alloc]} allocations #{result[:gc]} GC runs)"
         puts "\t\tReturned: #{response}" if response
 
-        results << [ser_name, val_name, speed]
+        results << [ser_name, val_name, total, speed, result[:alloc].to_f / total, total.to_f / result[:gc]]
       rescue => e
         puts "\t\tException raised: #{e}\n\t\t#{e.backtrace.first(15).join("\n\t\t")}"
       end
@@ -319,11 +403,12 @@ def do_test &block
 end
 
 def show_results(results)
-  puts " #{'Serializer'.center(20)} | #{'Validator'.center(20)} | #{'Ops/sec'.center(10)}"
-  puts "-#{'-' * 20}-+-#{'-' * 20}-+-#{'-' * 10}"
+  puts " #{'Serializer'.center(15)} | #{'Validator'.center(24)} | #{'Ops'.center(8)} | #{'Ops/sec'.center(10)} | #{'Alloc/op'.center(10)} | #{'Ops/GC'.center(10)}"
+  puts "-#{'-' * 15}-+-#{'-' * 24}-+-#{'-' * 8}-+-#{'-' * 10}-+-#{'-' * 10}-+-#{'-' * 10}"
 
-  results.sort_by{|r| -r.last}.each do |serializer, validator, speed|
-    puts " #{serializer.to_s.ljust(20)} | #{validator.to_s.ljust(20)} | #{speed}"
+  results.sort_by{|r| -r[3]}.each do |serializer, validator, total, speed, alloc, gc_count|
+    puts " #{serializer.to_s.ljust(15)} | #{validator.to_s.ljust(24)} | #{total.to_s.rjust(8)} | " \
+      "#{('%.1f' % speed).rjust(10)} | #{('%.1f' % alloc).rjust(10)} | #{('%.1f' % gc_count).rjust(10)}"
   end
 
   puts
@@ -331,27 +416,12 @@ end
 
 def run_tests(valid, invalid)
   puts " Testing valid hashes ".center(50, '-')
-  results = do_test do |ser_name, serializer, val_name, validator|
-    validator.call(serializer.call(valid))
-  end
-
+  results = do_test(valid, false)
   show_results(results)
 
   puts " Testing invalid hashes ".center(50, '-')
-  results = do_test do |ser_name, serializer, val_name, validator|
-    error = nil
-    invalid.each do |h|
-      begin
-        validator.call(serializer.call(h))
-      rescue => e
-        error = e
-      end
-      raise "Validation should have failed for #{h}" if error.nil?
-    end
-    error
-  end
-
+  results = do_test(invalid, true)
   show_results(results)
 end
 
-run_tests good_hash, bad_hashes
+run_tests good_hashes, bad_hashes

@@ -1,12 +1,69 @@
 # Classy Hash extended validation generators
-# Copyright (C)2014 Deseret Book
+# Copyright (C)2016 Deseret Book and Contributors (see git history)
+# frozen_string_literal: true
 
 module ClassyHash
   # This module contains helpers that generate constraints for common
   # ClassyHash validation tasks.
   module Generate
-    # Generates a ClassyHash constraint that ensures a value is equal to one of
-    # the arguments in +args+.
+    # Used by the .all and .not generators.  Do not use directly.
+    class Composite
+      # Array of constraints to apply together.
+      attr_reader :constraints
+
+      # True if the constraints must all not match, false if they must all
+      # match.
+      attr_reader :negate
+
+      # Initializes a composite constraint with the given Array of
+      # +constraints+.  If +negate+ is true, then the constraints must all fail
+      # for the value to pass.
+      def initialize(constraints, negate = false)
+        raise 'No constraints were given' if constraints.empty?
+
+        @constraints = constraints
+        @negate = negate
+      end
+
+      # Returns a String describing the composite constraint failing against
+      # the given +value+.
+      def describe(value)
+        "#{negate ? 'none' : 'all'} of [#{CH.constraint_string(constraints, value)}]"
+      end
+    end
+
+    # Generates a constraint that requires a value to match *all* of the given
+    # constraints.  If no constraints are given, always passes.
+    #
+    # Raises an error if no constraints are given.
+    #
+    # Example:
+    #     schema = {
+    #       a: CH::G.all(Integer, 1..100, CH::G.not(Set.new([7, 13])))
+    #     }
+    #     ClassyHash.validate({ a: 25 }, schema)
+    def self.all(*constraints)
+      Composite.new(constraints.freeze)
+    end
+
+    # Generates a constraint that requires a value to match *none* of the given
+    # constraints.
+    #
+    # Raises an error if no constraints are given.
+    #
+    # Example:
+    #     schema = {
+    #       a: CH::G.not(Rational, BigDecimal)
+    #     }
+    #     ClassyHash.validate({ a: 1.25 }, schema)
+    def self.not(*constraints)
+      Composite.new(constraints.freeze, true)
+    end
+
+    # Deprecated.  Generates a ClassyHash constraint that ensures a value is
+    # equal to one of the arguments in +args+.
+    #
+    # For new schemas, consider creating a Set with the enumeration elements.
     #
     # Example:
     #     schema = {
@@ -14,9 +71,7 @@ module ClassyHash
     #     }
     #     ClassyHash.validate({ a: 1 }, schema)
     def self.enum(*args)
-      lambda {|v|
-        args.include?(v) || "an element of #{args.inspect}"
-      }
+      Set.new(args)
     end
 
     # Generates a constraint that imposes a length limitation (an exact length

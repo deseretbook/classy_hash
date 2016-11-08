@@ -1,9 +1,101 @@
 # Classy Hash: Keep Your Hashes Classy (Generators RSpec test suite)
 # Created June 2014 by Mike Bourgeous, DeseretBook.com
-# Copyright (C)2014 Deseret Book
+# Copyright (C)2016 Deseret Book
 # See LICENSE and README.md for details.
 
+require 'rational'
+require 'bigdecimal'
+
 describe CH::G do
+  context 'full validation' do
+    let(:schema) {
+      { a: CH::G.all(String, 'a'..'z') }
+    }
+
+    describe '.all' do
+      it 'accepts matching values' do
+        expect{ CH.validate({ a: 'a' }, schema, full: true) }.not_to raise_error
+      end
+
+      it 'rejects non-matching values' do
+        expect{ CH.validate({ a: 1 }, schema, full: true) }.to raise_error(/all of.*String/)
+      end
+    end
+  end
+
+  describe '.all' do
+    let(:schema) {
+      {
+        str: [:optional, CH::G.all(String, 'a'..'z', ->(v){ v.respond_to?(:length) && v.length.odd? ? true : 'odd length' })],
+        int: [:optional, CH::G.all(Integer, 1..100, CH::G.not(Set.new([7, 13])))],
+        nil: [:optional, CH::G.all(NilClass)],
+      }
+    }
+
+    it 'accepts values matching all constraints' do
+      expect{ CH.validate({ str: 'hello' }, schema) }.not_to raise_error
+      expect{ CH.validate({ str: 'a' }, schema) }.not_to raise_error
+      expect{ CH.validate({ str: 'z' }, schema) }.not_to raise_error
+
+      expect{ CH.validate({ int: 1 }, schema) }.not_to raise_error
+      expect{ CH.validate({ int: 10 }, schema) }.not_to raise_error
+      expect{ CH.validate({ int: 100 }, schema) }.not_to raise_error
+
+      expect{ CH.validate({ nil: nil }, schema) }.not_to raise_error
+    end
+
+    it 'rejects values not matching all constraints' do
+      expect{ CH.validate({ str: 3 }, schema) }.to raise_error(/all of.*String.*/)
+      expect{ CH.validate({ str: :invalid }, schema) }.to raise_error(/all of.*String.*/)
+      expect{ CH.validate({ str: 'hi' }, schema) }.to raise_error(/all of.*String.*odd length/)
+      expect{ CH.validate({ str: 'A' }, schema) }.to raise_error(/all of.*String.*Proc/)
+
+      expect{ CH.validate({ int: 0 }, schema) }.to raise_error(/all of.*Integer/)
+      expect{ CH.validate({ int: 10.5 }, schema) }.to raise_error(/all of.*Integer/)
+      expect{ CH.validate({ int: 101 }, schema) }.to raise_error(/all of.*Integer/)
+      expect{ CH.validate({ int: '50' }, schema) }.to raise_error(/all of.*Integer/)
+
+      expect{ CH.validate({ nil: :nil }, schema) }.to raise_error(/all of.*Nil/)
+    end
+
+    it 'raises an error if no constraints are given' do
+      expect{ CH::G.all }.to raise_error(/No constraints/)
+    end
+  end
+
+  describe '.not' do
+    let(:not_schema) { { not: CH::G.not(Rational, BigDecimal, String, 10.0..20.0) } }
+    let(:single_schema) { { single: CH::G.not(String) } }
+
+    it 'accepts values not matching any constraints' do
+      expect{ CH.validate({ not: 9 }, not_schema) }.not_to raise_error
+      expect{ CH.validate({ not: -5.5 }, not_schema) }.not_to raise_error
+      expect{ CH.validate({ not: :symbol }, not_schema) }.not_to raise_error
+      expect{ CH.validate({ not: Object }, not_schema) }.not_to raise_error
+      expect{ CH.validate({ not: nil }, not_schema) }.not_to raise_error
+
+      expect{ CH.validate({ single: String }, single_schema) }.not_to raise_error
+      expect{ CH.validate({ single: :String }, single_schema) }.not_to raise_error
+      expect{ CH.validate({ single: 123 }, single_schema) }.not_to raise_error
+      expect{ CH.validate({ single: nil }, single_schema) }.not_to raise_error
+    end
+
+    it 'rejects values matching one or more constraints' do
+      expect{ CH.validate({ not: Rational(3, 5) }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
+      expect{ CH.validate({ not: BigDecimal.new('0.25') }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
+      expect{ CH.validate({ not: 'A string' }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
+      expect{ CH.validate({ not: 13.0 }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
+      expect{ CH.validate({ not: 13 }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
+
+      expect{ CH.validate({ single: 'valid' }, single_schema) }.to raise_error(/:single.*none of.*String/)
+      expect{ CH.validate({ single: '' }, single_schema) }.to raise_error(/:single.*none of.*String/)
+    end
+
+    it 'raises an error if no constraints are given' do
+      expect{ CH::G.not }.to raise_error(/No constraints/)
+    end
+  end
+
   describe '.enum' do
     let(:int_schema) do
       { a: CH::G.enum(1, 2, 3, 4, 5) }

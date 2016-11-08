@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'classy_hash'
-  s.version = '0.1.6'
+  s.version = '0.2.0'
   s.license = 'MIT'
   s.files = ['lib/classy_hash.rb', 'lib/classy_hash/generate.rb']
   s.summary = 'Classy Hash: Keep your Hashes classy; a Hash schema validator'
@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
     schema Hash, and Classy Hash will make sure your data matches, providing
     helpful error messages if it doesn't.
     DESC
-  s.authors = ['Deseret Book', 'Mike Bourgeous']
+  s.authors = ['Deseret Book', 'Mike Bourgeous', 'Git Contributors']
   s.email = ['webdev@deseretbook.com', 'mike@mikebourgeous.com']
   s.homepage = 'https://github.com/deseretbook/classy_hash'
 
