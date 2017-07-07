@@ -14,7 +14,7 @@ describe ClassyHash do
       schema: {
         k1: String,
         k2: Numeric,
-        k3: Fixnum,
+        k3: Integer,
         k4: TrueClass,
         k5: /\Ah.*d\z/i,
         k6: /H.*d/,
@@ -33,7 +33,6 @@ describe ClassyHash do
         [ /^:k1/, { k1: :optional, k2: 2, k3: 3, k4: true, k5: 'hd', k6: 'Hd' } ],
         [ /^:k2/, { k1: '', k2: nil, k3: 3, k4: true, k5: 'hd', k6: 'Hd' } ],
         [ /^:k3/, { k1: '', k2: 0, k3: 3.3, k4: true, k5: 'hd', k6: 'Hd' } ],
-        [ /^:k3/, { k1: '', k2: 0, k3: 1<<200, k4: true, k5: 'hd', k6: 'Hd' } ],
         [ /^:k4/, { k1: '', k2: 0, k3: 3, k4: 'invalid', k5: 'hd', k6: 'Hd' } ],
         [ /^:k5.*String.*match/, { k1: '', k2: 0, k3: 3, k4: true, k5: nil, k6: 'Hd' } ],
         [ /^:k5.*String.*match/, { k1: '', k2: 0, k3: 3, k4: true, k5: 'Not hd', k6: 'Hd' } ],
@@ -618,11 +617,9 @@ describe ClassyHash do
       expect{ ClassyHash.validate({a: Rational(1, 3)}, {a: Numeric}) }.not_to raise_error
     end
 
-    it 'rejects float, bignum, and rational for fixnum' do
-      # TODO: Ruby 2.4 merges Bignum and Fixnum into Integer
-      expect{ ClassyHash.validate({a: 1.0}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
-      expect{ ClassyHash.validate({a: 1<<200}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
-      expect{ ClassyHash.validate({a: Rational(1, 3)}, {a: Fixnum}) }.to raise_error(/not.*(Integer|Fixnum)/)
+    it 'rejects float and rational for integer' do
+      expect{ ClassyHash.validate({a: 1.0}, {a: Integer}) }.to raise_error(/not.*(Integer|Fixnum)/)
+      expect{ ClassyHash.validate({a: Rational(1, 3)}, {a: Integer}) }.to raise_error(/not.*(Integer|Fixnum)/)
     end
 
     it 'accepts valid multiple choice values' do
