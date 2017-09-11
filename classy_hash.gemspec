@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'classy_hash'
-  s.version = '0.2.0'
+  s.version = '0.2.1'
   s.license = 'MIT'
   s.files = ['lib/classy_hash.rb', 'lib/classy_hash/generate.rb']
   s.summary = 'Classy Hash: Keep your Hashes classy; a Hash schema validator'
@@ -13,5 +13,5 @@ Gem::Specification.new do |s|
   s.email = ['webdev@deseretbook.com', 'mike@mikebourgeous.com']
   s.homepage = 'https://github.com/deseretbook/classy_hash'
 
-  s.required_ruby_version = ['>= 2.0', '< 2.4.0']
+  s.required_ruby_version = ['>= 2.0']
 end
