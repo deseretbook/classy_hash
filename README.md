@@ -505,7 +505,7 @@ schema = {
   key1: CH::G.all(Integer, 1.0..100.0)
 }
 ClassyHash.validate({ key1: 5 }, schema) # Returns true
-ClassyHash.validate({ key1: BigDecimal.new(5) }, schema) # Raises ":key1 is not all of [one of a/an Integer, a Numeric in range 1.0..100.0]"
+ClassyHash.validate({ key1: BigDecimal(5) }, schema) # Raises ":key1 is not all of [one of a/an Integer, a Numeric in range 1.0..100.0]"
 ```
 
 The `.not` generator requires all constraints to fail.

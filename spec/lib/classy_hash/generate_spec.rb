@@ -82,7 +82,7 @@ describe CH::G do
 
     it 'rejects values matching one or more constraints' do
       expect{ CH.validate({ not: Rational(3, 5) }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
-      expect{ CH.validate({ not: BigDecimal.new('0.25') }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
+      expect{ CH.validate({ not: BigDecimal('0.25') }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
       expect{ CH.validate({ not: 'A string' }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
       expect{ CH.validate({ not: 13.0 }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
       expect{ CH.validate({ not: 13 }, not_schema) }.to raise_error(/:not.*none of.*Rational.*BigDecimal.*String/)
