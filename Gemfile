@@ -20,7 +20,7 @@ gem 'msgpack', groups: [:benchmark, :test]
 gem 'rspec', '~> 3.5', group: :test
 
 # SimpleCov for offline test coverage
-gem 'simplecov', '~> 0.15.0', require: false, group: :test
+gem 'simplecov', '~> 0.17.0', '< 0.18', require: false, group: :test
 
 # Code Climate for online test coverage
 gem 'codeclimate-test-reporter', '~> 0.6.0', require: false, group: :test
