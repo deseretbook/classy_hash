@@ -686,6 +686,7 @@ considered before deciding to roll our own:
 - [JSON Schema](http://json-schema.org/) ([json-schema gem](http://rubygems.org/gems/json-schema))
 - [Hash Validator](https://github.com/JamesBrooks/hash_validator)
 - [schema_hash](https://github.com/djsun/schema_hash)
+- [datacaster](https://github.com/EugZol/datacaster)
 
 ### License
 
